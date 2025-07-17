@@ -1,6 +1,7 @@
 package com.project.platform.mapper;
 
 import com.project.platform.entity.User;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -15,11 +16,11 @@ public interface UserMapper {
 
 
     /**
-     * Query by username (fuzzy query)
+     * Query by username
      * @param username
      */
-//    @Select("SELECT * FROM user where username = #{username}")
-    @Select("SELECT * FROM user where username LIKE CONCAT('%',#{username},'%')")
+    @Select("SELECT * FROM user where username = #{username}")
+//    @Select("SELECT * FROM user where username LIKE CONCAT('%',#{username},'%')")
     User selectByUsername(String username);
 
     /**
@@ -36,4 +37,11 @@ public interface UserMapper {
      */
     @Select("SELECT * FROM user where tel = #{tel}")
     User selectByTel(String tel);
+
+    /**
+     * add new user
+     * @param user
+     * @return
+     */
+    int insert(User user);
 }

@@ -4,10 +4,7 @@ import com.project.platform.entity.User;
 import com.project.platform.service.UserService;
 import com.project.platform.vo.ResponseVO;
 import jakarta.annotation.Resource;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -51,5 +48,16 @@ public class UserController {
     @GetMapping("selectByTel/{tel}")
     public ResponseVO<List<User>> selectByTel(@PathVariable("tel") String tel){
         return ResponseVO.ok(userService.selectByTel(tel));
+    }
+
+    /**
+     * insert(add) new user
+     * @param newUser
+     * @return
+     */
+    @PostMapping("add")
+    public ResponseVO add(@RequestBody User newUser){
+        userService.insert(newUser);
+        return ResponseVO.ok();
     }
 }

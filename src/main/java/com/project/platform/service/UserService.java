@@ -20,7 +20,7 @@ public interface UserService extends CommonService{
     User selectById(Integer id);
 
     /**
-     * Fuzzy query user by username
+     * Query user by username
      * @param username
      * @return
      */
@@ -32,5 +32,11 @@ public interface UserService extends CommonService{
      * @return
      */
     User selectByTel(String tel);
+
+    /**
+     * Insert new user
+     * @param user
+     */
+    void insert(User user);
     
 }
