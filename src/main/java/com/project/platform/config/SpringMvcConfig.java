@@ -16,7 +16,7 @@ public class SpringMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/**")
-                // API that allowed access
+                // API that allowe access
                 .excludePathPatterns(
                         "/common/login",
                         "/common/register",

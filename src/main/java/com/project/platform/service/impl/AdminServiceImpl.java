@@ -70,7 +70,7 @@ public class AdminServiceImpl implements AdminService {
     private void check(Admin entity) {
         Admin admin = adminMapper.selectByUserName(entity.getUsername());
         if (admin != null && admin.getId() != entity.getId()) {
-            throw new CustomException("用户名已存在");
+            throw new CustomException("username already exists");
         }
     }
 
@@ -120,7 +120,7 @@ public class AdminServiceImpl implements AdminService {
     public void updateCurrentUserPassword(UpdatePasswordDTO updatePassword) {
         Admin admin = adminMapper.selectById(CurrentUserThreadLocal.getCurrentUser().getId());
         if (!admin.getPassword().equals(updatePassword.getOldPassword())) {
-            throw new CustomException("旧密码不正确");
+            throw new CustomException("Incorrect old password");
         }
         admin.setPassword(updatePassword.getNewPassword());
         adminMapper.updateById(admin);
@@ -137,7 +137,7 @@ public class AdminServiceImpl implements AdminService {
     public void retrievePassword(RetrievePasswordDTO retrievePasswordDTO) {
         Admin admin = adminMapper.selectByTel(retrievePasswordDTO.getTel());
         if (admin == null) {
-            throw new CustomException("手机号不存在");
+            throw new CustomException("phone number not exist");
         }
         //TODO 校验验证码
         admin.setPassword(retrievePasswordDTO.getPassword());
