@@ -1,0 +1,35 @@
+server:
+  ip: localhost
+  port: 1000
+spring:
+  main:
+    allow-circular-references: true # Allow circular references
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/templatev3_s?useUnicode=true&useSSL=false&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root123456
+  servlet:
+    multipart:
+      max-file-size: 100MB # File upload size limit; set the maximum size. Exceeding this will cause an error
+      max-request-size: 1000MB # Maximum request size limit for batch uploads
+
+  jackson: # Jackson library configuration
+    date-format: "yyyy-MM-dd HH:mm:ss" # Set date format as "yyyy-MM-dd HH:mm:ss"
+    serialization:
+      write-dates-as-timestamps: false # Disable serialization of dates as timestamps
+    time-zone: Asia/Shanghai
+mybatis:
+  mapper-locations: classpath:mapper/*Mapper.xml
+  configuration:
+    map-underscore-to-camel-case: true # Enable camel case mapping
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # Log SQL to the console
+  logging:
+    level: debug # Set MyBatis log level to DEBUG to print SQL statements
+resetPassword: 123456
+spring.main.all-circular-references: true
+
+files:
+  uploads:
+    path: uploads/
+    baseUrl: http://localhost:1000/file
