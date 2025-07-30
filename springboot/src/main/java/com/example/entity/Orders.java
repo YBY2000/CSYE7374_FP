@@ -2,9 +2,6 @@ package com.example.entity;
 
 import java.math.BigDecimal;
 
-/**
- * 订单信息
- */
 public class Orders {
     private Integer id;
     private String content;

@@ -21,7 +21,7 @@ public class TablesService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "INSERT INTO tables (no, unit, free, userId) VALUES (?, ?, ?, ?)";
+            String sql = "INSERT INTO tables (no, unit, free, user_id) VALUES (?, ?, ?, ?)";
             ps = conn.prepareStatement(sql);
             ps.setString(1, table.getNo());
             ps.setString(2, table.getUnit());
@@ -66,7 +66,7 @@ public class TablesService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "UPDATE tables SET no=?, unit=?, free=?, userId=? WHERE id=?";
+            String sql = "UPDATE tables SET no=?, unit=?, free=?, user_id=? WHERE id=?";
             ps = conn.prepareStatement(sql);
             ps.setString(1, table.getNo());
             ps.setString(2, table.getUnit());
@@ -97,7 +97,7 @@ public class TablesService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "SELECT t.*, u.name as userName FROM tables t LEFT JOIN user u ON t.userId = u.id WHERE t.id = ?";
+            String sql = "SELECT t.*, u.name as userName FROM tables t LEFT JOIN user u ON t.user_id = u.id WHERE t.id = ?";
             ps = conn.prepareStatement(sql);
             ps.setInt(1, id);
             rs = ps.executeQuery();
@@ -108,7 +108,7 @@ public class TablesService {
                 table.setNo(rs.getString("no"));
                 table.setUnit(rs.getString("unit"));
                 table.setFree(rs.getString("free"));
-                table.setUserId(rs.getInt("userId"));
+                table.setUserId(rs.getInt("user_id"));
                 table.setUserName(rs.getString("userName"));
                 return table;
             }
@@ -133,7 +133,7 @@ public class TablesService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "SELECT t.*, u.name as userName FROM tables t LEFT JOIN user u ON t.userId = u.id";
+            String sql = "SELECT t.*, u.name as userName FROM tables t LEFT JOIN user u ON t.user_id = u.id";
             if (name != null && !name.isEmpty()) {
                 sql += " WHERE t.no LIKE ?";
             }
@@ -152,7 +152,7 @@ public class TablesService {
                 table.setNo(rs.getString("no"));
                 table.setUnit(rs.getString("unit"));
                 table.setFree(rs.getString("free"));
-                table.setUserId(rs.getInt("userId"));
+                table.setUserId(rs.getInt("user_id"));
                 table.setUserName(rs.getString("userName"));
                 tables.add(table);
             }
@@ -176,7 +176,7 @@ public class TablesService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "SELECT t.*, u.name as userName FROM tables t LEFT JOIN user u ON t.userId = u.id WHERE t.userId = ? ORDER BY t.id DESC LIMIT 1";
+            String sql = "SELECT t.*, u.name as userName FROM tables t LEFT JOIN user u ON t.user_id = u.id WHERE t.user_id = ? ORDER BY t.id DESC LIMIT 1";
             ps = conn.prepareStatement(sql);
             ps.setInt(1, userId);
             rs = ps.executeQuery();
@@ -187,7 +187,7 @@ public class TablesService {
                 table.setNo(rs.getString("no"));
                 table.setUnit(rs.getString("unit"));
                 table.setFree(rs.getString("free"));
-                table.setUserId(rs.getInt("userId"));
+                table.setUserId(rs.getInt("user_id"));
                 table.setUserName(rs.getString("userName"));
                 return table;
             }
@@ -206,7 +206,7 @@ public class TablesService {
      */
     public void addOrder(Tables table) {
         try {
-            String sql = "UPDATE tables SET userId = ?, free = 'occupied' WHERE id = ?";
+            String sql = "UPDATE tables SET user_id = ?, free = 'occupied' WHERE id = ?";
             int result = DatabaseUtil.executeUpdate(sql, table.getUserId(), table.getId());
             if (result <= 0) {
                 throw new RuntimeException("Table not found");
@@ -222,7 +222,7 @@ public class TablesService {
      */
     public void removeOrder(Tables table) {
         try {
-            String sql = "UPDATE tables SET userId = NULL, free = 'free' WHERE id = ?";
+            String sql = "UPDATE tables SET user_id = NULL, free = 'free' WHERE id = ?";
             int result = DatabaseUtil.executeUpdate(sql, table.getId());
             if (result <= 0) {
                 throw new RuntimeException("Table not found");
@@ -290,7 +290,7 @@ public class TablesService {
      */
     public void assignTable(Integer tableId, Integer userId) {
         try {
-            String sql = "UPDATE tables SET userId = ?, free = 'occupied' WHERE id = ?";
+            String sql = "UPDATE tables SET user_id = ?, free = 'occupied' WHERE id = ?";
             int result = DatabaseUtil.executeUpdate(sql, userId, tableId);
             if (result <= 0) {
                 throw new RuntimeException("Table not found");
@@ -306,7 +306,7 @@ public class TablesService {
      */
     public void releaseTable(Integer tableId) {
         try {
-            String sql = "UPDATE tables SET userId = NULL, free = 'free' WHERE id = ?";
+            String sql = "UPDATE tables SET user_id = NULL, free = 'free' WHERE id = ?";
             int result = DatabaseUtil.executeUpdate(sql, tableId);
             if (result <= 0) {
                 throw new RuntimeException("Table not found");

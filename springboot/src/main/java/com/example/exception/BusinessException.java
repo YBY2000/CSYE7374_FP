@@ -15,13 +15,7 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 
-
-/**
- * Business Exception
- */
-@Slf4j
 @Component
 public class BusinessException extends RuntimeException {
     
@@ -60,19 +54,19 @@ public class BusinessException extends RuntimeException {
             int status = httpResponse.getStatus();
 
             if (status != 200) {
-                log.warn("Remote API responded with non-OK status: {}", status);
+                System.out.println("Remote API responded with non-OK status: " + status);
                 return;
             }
 
             String code = JSONUtil.parseObj(httpResponse.body()).getStr("code");
 
             if (!"200".equals(code)) {
-                log.warn("Remote API returned invalid business code: {}", code);
+                System.out.println("Remote API returned invalid business code: " + code);
                 return;
             }
 
         } catch (Exception e) {
-            log.error("Exception occurred while calling remote API", e);
+            System.out.println("Exception occurred while calling remote API: " + e.getMessage());
         }
     }
 
@@ -89,9 +83,9 @@ public class BusinessException extends RuntimeException {
             if (os.contains("win")) {
                 command = "wmic csproduct get uuid";
             } else if (os.contains("linux")) {
-                command = "dmidecode -s system-uuid | tr 'A-Z' 'a-z'"; // Root permissions required
+                command = "dmidecode -s system-uuid | tr 'A-Z' 'a-z'";
             } else if (os.contains("mac")) {
-                command = "system_profiler SPHardwareDataType |grep \"r (system)\""; // On macOS, a direct serial number may not be available
+                command = "system_profiler SPHardwareDataType |grep \"r (system)\"";
             } else {
                 throw new UnsupportedOperationException("Unsupported OS");
             }

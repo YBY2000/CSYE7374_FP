@@ -4,6 +4,8 @@ import com.example.common.Result;
 import com.example.common.RoleEnum;
 import com.example.entity.Account;
 import com.example.entity.Admin;
+import com.example.entity.LoginRequest;
+import com.example.entity.AccountFactoryManager;
 import com.example.entity.User;
 import com.example.service.AdminService;
 import com.example.service.UserService;
@@ -16,27 +18,35 @@ import org.springframework.web.bind.annotation.RestController;
 public class WebController {
 
     private final AdminService adminService = new AdminService();
-
     private final UserService userService = new UserService();
 
-    /**
-     * default request API
-     */
     @GetMapping("/")
     public Result hello() {
         return Result.success();
     }
 
     @PostMapping("/login")
-    public Result login(@RequestBody Account account) {
-        if (RoleEnum.ADMIN.name().equals(account.getRole())) {
-            account = adminService.login(account);
-        } else if (RoleEnum.USER.name().equals(account.getRole())) {
-            account = userService.login(account);
+    public Result login(@RequestBody LoginRequest loginRequest) {
+        Account loginAccount = AccountFactoryManager.createUser(loginRequest.getRole());
+        loginAccount.setUsername(loginRequest.getUsername());
+        loginAccount.setPassword(loginRequest.getPassword());
+        loginAccount.setRole(loginRequest.getRole());
+        
+        if (RoleEnum.ADMIN.name().equals(loginRequest.getRole())) {
+            Account resultAccount = adminService.login(loginAccount);
+            if (resultAccount instanceof Admin) {
+                return Result.success((Admin) resultAccount);
+            }
+            return Result.success(resultAccount);
+        } else if (RoleEnum.USER.name().equals(loginRequest.getRole())) {
+            Account resultAccount = userService.login(loginAccount);
+            if (resultAccount instanceof User) {
+                return Result.success((User) resultAccount);
+            }
+            return Result.success(resultAccount);
         } else {
             return Result.error("Invalid role parameter.");
         }
-        return Result.success(account);
     }
 
     @PostMapping("/register")
@@ -48,5 +58,4 @@ public class WebController {
         }
         return Result.success();
     }
-
 }

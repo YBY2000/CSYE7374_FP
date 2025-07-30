@@ -14,9 +14,6 @@ import java.util.List;
 
 public class UserService {
     
-    /**
-     * User login 
-     */
     public Account login(Account account) {
         Connection conn = null;
         PreparedStatement ps = null;
@@ -37,11 +34,7 @@ public class UserService {
                 dbUser.setName(rs.getString("name"));
                 dbUser.setAvatar(rs.getString("avatar"));
                 dbUser.setRole(rs.getString("role"));
-                dbUser.setSex(rs.getString("sex"));
-                dbUser.setPhone(rs.getString("phone"));
-                dbUser.setAccount(rs.getBigDecimal("account"));
                 
-                // Validate password
                 if (!dbUser.getPassword().equals(account.getPassword())) {
                     throw new CustomException("Incorrect username or password");
                 }
@@ -58,15 +51,11 @@ public class UserService {
         }
     }
     
-    /**
-     * Register new user 
-     */
     public void register(User user) {
         Connection conn = null;
         PreparedStatement ps = null;
         
         try {
-            // Check if user already exists
             conn = DatabaseUtil.getConnection();
             String checkSql = "SELECT * FROM user WHERE username = ?";
             ps = conn.prepareStatement(checkSql);
@@ -77,12 +66,10 @@ public class UserService {
                 throw new CustomException("Account already exists");
             }
             
-            // Validate password
             if (user.getPassword() == null || user.getPassword().isEmpty()) {
                 throw new CustomException("Password cannot be empty");
             }
             
-            // Set default values
             if (user.getName() == null || user.getName().isEmpty()) {
                 user.setName(user.getUsername());
             }
@@ -90,17 +77,13 @@ public class UserService {
                 user.setRole("USER");
             }
             
-            // Insert new user
-            String insertSql = "INSERT INTO user (username, password, name, avatar, role, sex, phone, account) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            String insertSql = "INSERT INTO user (username, password, name, avatar, role) VALUES (?, ?, ?, ?, ?)";
             ps = conn.prepareStatement(insertSql);
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getName());
             ps.setString(4, user.getAvatar());
             ps.setString(5, user.getRole());
-            ps.setString(6, user.getSex());
-            ps.setString(7, user.getPhone());
-            ps.setBigDecimal(8, user.getAccount());
             
             int result = ps.executeUpdate();
             if (result <= 0) {
@@ -115,15 +98,11 @@ public class UserService {
         }
     }
     
-    /**
-     * Add new user 
-     */
     public void add(User user) {
         Connection conn = null;
         PreparedStatement ps = null;
         
         try {
-            // Check if user already exists
             conn = DatabaseUtil.getConnection();
             String checkSql = "SELECT * FROM user WHERE username = ?";
             ps = conn.prepareStatement(checkSql);
@@ -134,7 +113,6 @@ public class UserService {
                 throw new CustomException("Account already exists");
             }
             
-            // Set default values
             if (user.getPassword() == null || user.getPassword().isEmpty()) {
                 user.setPassword("123");
             }
@@ -145,17 +123,13 @@ public class UserService {
                 user.setRole("USER");
             }
             
-            // Insert new user
-            String insertSql = "INSERT INTO user (username, password, name, avatar, role, sex, phone, account) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            String insertSql = "INSERT INTO user (username, password, name, avatar, role) VALUES (?, ?, ?, ?, ?)";
             ps = conn.prepareStatement(insertSql);
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getName());
             ps.setString(4, user.getAvatar());
             ps.setString(5, user.getRole());
-            ps.setString(6, user.getSex());
-            ps.setString(7, user.getPhone());
-            ps.setBigDecimal(8, user.getAccount());
             
             int result = ps.executeUpdate();
             if (result <= 0) {
@@ -170,9 +144,6 @@ public class UserService {
         }
     }
     
-    /**
-     * Delete user by ID 
-     */
     public void deleteById(Integer id) {
         try {
             String sql = "DELETE FROM user WHERE id = ?";
@@ -186,35 +157,26 @@ public class UserService {
         }
     }
     
-    /**
-     * Delete multiple users by IDs
-     */
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
             this.deleteById(id);
         }
     }
     
-    /**
-     * Update user 
-     */
     public void updateById(User user) {
         Connection conn = null;
         PreparedStatement ps = null;
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "UPDATE user SET username=?, password=?, name=?, avatar=?, role=?, sex=?, phone=?, account=? WHERE id=?";
+            String sql = "UPDATE user SET username=?, password=?, name=?, avatar=?, role=? WHERE id=?";
             ps = conn.prepareStatement(sql);
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getName());
             ps.setString(4, user.getAvatar());
             ps.setString(5, user.getRole());
-            ps.setString(6, user.getSex());
-            ps.setString(7, user.getPhone());
-            ps.setBigDecimal(8, user.getAccount());
-            ps.setInt(9, user.getId());
+            ps.setInt(6, user.getId());
             
             int result = ps.executeUpdate();
             if (result <= 0) {
@@ -229,9 +191,6 @@ public class UserService {
         }
     }
     
-    /**
-     * Get user by ID 
-     */
     public User selectById(Integer id) {
         Connection conn = null;
         PreparedStatement ps = null;
@@ -252,9 +211,6 @@ public class UserService {
                 user.setName(rs.getString("name"));
                 user.setAvatar(rs.getString("avatar"));
                 user.setRole(rs.getString("role"));
-                user.setSex(rs.getString("sex"));
-                user.setPhone(rs.getString("phone"));
-                user.setAccount(rs.getBigDecimal("account"));
                 return user;
             }
             
@@ -267,28 +223,22 @@ public class UserService {
         return null;
     }
     
-    /**
-     * Get all users 
-     */
     public List<User> selectAll(String name) {
-        List<User> users = new ArrayList<>();
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
+        List<User> list = new ArrayList<>();
         
         try {
             conn = DatabaseUtil.getConnection();
             String sql = "SELECT * FROM user";
             if (name != null && !name.isEmpty()) {
                 sql += " WHERE name LIKE ?";
-            }
-            sql += " ORDER BY id DESC";
-            
-            ps = conn.prepareStatement(sql);
-            if (name != null && !name.isEmpty()) {
+                ps = conn.prepareStatement(sql);
                 ps.setString(1, "%" + name + "%");
+            } else {
+                ps = conn.prepareStatement(sql);
             }
-            
             rs = ps.executeQuery();
             
             while (rs.next()) {
@@ -299,10 +249,7 @@ public class UserService {
                 user.setName(rs.getString("name"));
                 user.setAvatar(rs.getString("avatar"));
                 user.setRole(rs.getString("role"));
-                user.setSex(rs.getString("sex"));
-                user.setPhone(rs.getString("phone"));
-                user.setAccount(rs.getBigDecimal("account"));
-                users.add(user);
+                list.add(user);
             }
             
         } catch (SQLException e) {
@@ -311,31 +258,44 @@ public class UserService {
             DatabaseUtil.closeResources(conn, ps, rs);
         }
         
-        return users;
+        return list;
     }
     
-    /**
-     * Get users with pagination 
-     */
     public com.github.pagehelper.PageInfo<User> selectPage(String name, Integer pageNum, Integer pageSize) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        List<User> list = new ArrayList<>();
         
-        List<User> allUsers = selectAll(name);
-        
-        int total = allUsers.size();
-        int startIndex = (pageNum - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, total);
-        
-        List<User> pageData = new ArrayList<>();
-        if (startIndex < total) {
-            pageData = allUsers.subList(startIndex, endIndex);
+        try {
+            conn = DatabaseUtil.getConnection();
+            String sql = "SELECT * FROM user";
+            if (name != null && !name.isEmpty()) {
+                sql += " WHERE name LIKE ?";
+                ps = conn.prepareStatement(sql);
+                ps.setString(1, "%" + name + "%");
+            } else {
+                ps = conn.prepareStatement(sql);
+            }
+            rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                User user = new User();
+                user.setId(rs.getInt("id"));
+                user.setUsername(rs.getString("username"));
+                user.setPassword(rs.getString("password"));
+                user.setName(rs.getString("name"));
+                user.setAvatar(rs.getString("avatar"));
+                user.setRole(rs.getString("role"));
+                list.add(user);
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Get users by page failed: " + e.getMessage());
+        } finally {
+            DatabaseUtil.closeResources(conn, ps, rs);
         }
         
-        com.github.pagehelper.PageInfo<User> pageInfo = new com.github.pagehelper.PageInfo<>(pageData);
-        pageInfo.setPageNum(pageNum);
-        pageInfo.setPageSize(pageSize);
-        pageInfo.setTotal(total);
-        pageInfo.setPages((int) Math.ceil((double) total / pageSize));
-        
-        return pageInfo;
+        return new com.github.pagehelper.PageInfo<>(list);
     }
-} 
+}
