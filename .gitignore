@@ -1,33 +1,87 @@
-# === Java / Spring Boot ===
+# ========================
+# === Java / Spring Boot
+# ========================
+
 # Maven
 target/
 !.mvn/wrapper/maven-wrapper.jar
-**/logs/
-**/*.log
 
 # Gradle
 build/
 .gradle/
 !gradle/wrapper/gradle-wrapper.jar
 
+# Logs
+**/logs/
+**/*.log
+*.pid
+
+# Spring Boot DevTools
+spring-boot-devtools.properties
+
+# ========================
+# === Vue 3 / Node.js
+# ========================
+
+# Dependency folders
+node_modules/
+
+# Production build
+dist/
+.output/
+.vite/
+.cache/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+pnpm-lock.yaml
+
+# Environment files
+.env.local
+.env.*
+!.env.example
+
+# Test / Coverage
+coverage/
+
+# ========================
+# === IDEs / Editors
+# ========================
+
 # IntelliJ IDEA
 .idea/
 *.iml
 *.ipr
 *.iws
-out/
+.idea/log/
 
 # Eclipse
 .project
 .classpath
 .settings/
-bin/
+
+# VS Code
+.vscode/
 
 # STS
 .springBeans
 
-# VS Code
-.vscode/
+# JetBrains Rider / WebStorm 等
+*.sln
+*.user
+*.suo
+
+# Vim / Neovim / Emacs
+*.swp
+*.swo
+*~
+
+# ========================
+# === OS / System files
+# ========================
 
 # macOS
 .DS_Store
@@ -37,39 +91,22 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# === Vue / Node ===
-# Node modules and logs
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
-frontend/.output/
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/pnpm-lock.yaml
+# Linux
+*~
 
-# Optional environment files
-frontend/.env.local
-frontend/.env.*
-!frontend/.env.example
+# ========================
+# === Temporary files
+# ========================
 
-# === Logs and Temporary Files ===
-*.log
 *.tmp
-*.swp
-
-# === OS generated files ===
 *.bak
-*.tmp
-*.swp
-*.swo
 
-# === IDEs ===
-*.idea/
-*.vscode/
-*.classpath
-*.project
-*.settings/
+# ========================
+# === Other
+# ========================
 
-# === Other ===
+# Local env
 /.env
+
+# Java code coverage
+jacoco.exec

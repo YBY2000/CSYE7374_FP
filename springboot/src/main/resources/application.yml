@@ -1,0 +1,12 @@
+server:
+  port: 9090
+
+# File upload configuration
+spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+# Database configuration moved to singleton pool
+# No longer need MyBatis configuration
