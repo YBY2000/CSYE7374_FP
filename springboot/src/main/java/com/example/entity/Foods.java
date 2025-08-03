@@ -2,12 +2,24 @@ package com.example.entity;
 
 import java.math.BigDecimal;
 
-public class Foods {
+public class Foods implements FoodItem {
     private Integer id;
     private String name;
     private String descr;
     private BigDecimal price;
     private String img;
+
+    public Foods(String description, double price) {
+        this.descr = description;
+        this.price = BigDecimal.valueOf(price);
+    }
+
+    public Foods() {}
+
+    @Override
+    public String getDescription() {
+        return descr;
+    }
 
     public Integer getId() {
         return id;
@@ -23,6 +35,14 @@ public class Foods {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setDescription(String description) {
+        this.descr = description;
+    }
+
+    public void setPrice(double price) {
+        this.price = BigDecimal.valueOf(price);
     }
 
     public String getDescr() {

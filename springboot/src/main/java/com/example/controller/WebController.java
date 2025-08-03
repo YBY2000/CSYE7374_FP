@@ -9,6 +9,8 @@ import com.example.entity.AccountFactoryManager;
 import com.example.entity.User;
 import com.example.service.AdminService;
 import com.example.service.UserService;
+import com.example.service.UserFactoryService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +21,9 @@ public class WebController {
 
     private final AdminService adminService = new AdminService();
     private final UserService userService = new UserService();
+    
+    @Autowired
+    private UserFactoryService userFactoryService;
 
     @GetMapping("/")
     public Result hello() {
@@ -27,7 +32,7 @@ public class WebController {
 
     @PostMapping("/login")
     public Result login(@RequestBody LoginRequest loginRequest) {
-        Account loginAccount = AccountFactoryManager.createUser(loginRequest.getRole());
+        Account loginAccount = userFactoryService.createUserByRole(loginRequest.getRole());
         loginAccount.setUsername(loginRequest.getUsername());
         loginAccount.setPassword(loginRequest.getPassword());
         loginAccount.setRole(loginRequest.getRole());
@@ -53,6 +58,14 @@ public class WebController {
     public Result register(@RequestBody User user) {
         if (RoleEnum.USER.name().equals(user.getRole())) {
             userService.register(user);
+        } else if (RoleEnum.ADMIN.name().equals(user.getRole())) {
+            Account adminAccount = userFactoryService.createAdminUser();
+            adminAccount.setUsername(user.getUsername());
+            adminAccount.setPassword(user.getPassword());
+            adminAccount.setName(user.getName());
+            adminAccount.setRole(user.getRole());
+            // 这里可以调用 adminService.register() 如果存在的话
+            return Result.success(adminAccount);
         } else {
             return Result.error("Invalid role parameter.");
         }
