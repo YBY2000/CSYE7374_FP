@@ -16,7 +16,8 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.addAllowedOrigin("*"); // Allow cross-origin requests from any origin
+        corsConfiguration.addAllowedOrigin("http://localhost:5173"); // Allow cross-origin requests from frontend
+        corsConfiguration.setAllowCredentials(true); // Allow credentials
         corsConfiguration.addAllowedHeader("*"); // Allow all HTTP request headers
         corsConfiguration.addAllowedMethod("*"); // Allow all HTTP request methods (e.g., GET, POST, etc.)
         source.registerCorsConfiguration("/**", corsConfiguration); // Register this CORS configuration for all URL paths (/** means all paths)

@@ -1,8 +1,11 @@
 package com.example.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Orders {
+public class Orders implements Cloneable, OrderSubject {
     private Integer id;
     private String content;
     private BigDecimal total;
@@ -11,21 +14,16 @@ public class Orders {
     private String status;
     private String orderNo;
     private String userName;
+    
+    private List<Foods> foodList;
+    @JsonIgnore
+    private OrderState state;
+    @JsonIgnore
+    private List<OrderObserver> observers;
 
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
-    public String getOrderNo() {
-        return orderNo;
-    }
-
-    public void setOrderNo(String orderNo) {
-        this.orderNo = orderNo;
+    public Orders() {
+        this.observers = new ArrayList<>();
+        this.state = new PendingState();
     }
 
     public Integer getId() {
@@ -74,5 +72,124 @@ public class Orders {
 
     public void setStatus(String status) {
         this.status = status;
+        // 只在非JSON反序列化时更新状态
+        if (observers != null) {
+            updateStateFromStatus(status);
+        }
+    }
+
+    public String getOrderNo() {
+        return orderNo;
+    }
+
+    public void setOrderNo(String orderNo) {
+        this.orderNo = orderNo;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public List<Foods> getFoodList() {
+        return foodList;
+    }
+
+    public void setFoodList(List<Foods> foodList) {
+        this.foodList = foodList;
+    }
+
+    public void setState(OrderState state) {
+        this.state = state;
+    }
+
+    public OrderState getState() {
+        return state;
+    }
+
+    public void processOrder() {
+        state.handleState();
+    }
+
+    @Override
+    public void addObserver(OrderObserver observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void removeObserver(OrderObserver observer) {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void notifyObservers(String event) {
+        for (OrderObserver observer : observers) {
+            observer.onOrderChanged(this, event);
+        }
+    }
+
+    public void changeState(String newState) {
+        switch (newState.toUpperCase()) {
+            case "PENDING":
+                setState(new PendingState());
+                break;
+            case "PAID":
+                setState(new PaidState());
+                break;
+            case "PREPARING":
+                setState(new PreparingState());
+                break;
+            case "COMPLETED":
+                setState(new CompletedState());
+                break;
+            case "CANCELLED":
+                setState(new CancelledState());
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown state: " + newState);
+        }
+        this.status = newState.toUpperCase();
+        notifyObservers("State changed to: " + newState);
+    }
+
+    public void updateStateFromStatus(String status) {
+        if (status != null) {
+            switch (status.toUpperCase()) {
+                case "PENDING":
+                    setState(new PendingState());
+                    break;
+                case "PAID":
+                    setState(new PaidState());
+                    break;
+                case "PREPARING":
+                    setState(new PreparingState());
+                    break;
+                case "COMPLETED":
+                    setState(new CompletedState());
+                    break;
+                case "CANCELLED":
+                    setState(new CancelledState());
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public Orders clone() {
+        try {
+            Orders cloned = (Orders) super.clone();
+            if (this.foodList != null) {
+                cloned.foodList = new ArrayList<>(this.foodList);
+            }
+            if (this.observers != null) {
+                cloned.observers = new ArrayList<>(this.observers);
+            }
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("Clone not supported", e);
+        }
     }
 }

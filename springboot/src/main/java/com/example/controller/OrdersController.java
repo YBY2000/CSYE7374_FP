@@ -1,9 +1,10 @@
 package com.example.controller;
 
 import com.example.common.Result;
-import com.example.entity.Orders;
+import com.example.entity.*;
 import com.example.service.OrdersService;
 import com.github.pagehelper.PageInfo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,7 +13,8 @@ import java.util.List;
 @RequestMapping("/orders")
 public class OrdersController {
 
-    private final OrdersService ordersService = new OrdersService();
+    @Autowired
+    private OrdersService ordersService;
 
     /**
      * add
@@ -81,4 +83,38 @@ public class OrdersController {
         return Result.success(pageInfo);
     }
 
+    @PutMapping("/{id}/state/{state}")
+    public Result changeOrderState(@PathVariable Integer id, @PathVariable String state) {
+        ordersService.processOrderWithState(id, state);
+        return Result.success();
+    }
+
+    @PostMapping("/{id}/clone")
+    public Result cloneOrder(@PathVariable Integer id) {
+        Orders clonedOrder = ordersService.cloneOrder(id);
+        return Result.success(clonedOrder);
+    }
+
+    @PostMapping("/{id}/handle/{type}")
+    public Result handleOrder(@PathVariable Integer id, @PathVariable String type) {
+        ordersService.handleOrderWithType(id, type);
+        return Result.success();
+    }
+
+    @PostMapping("/{id}/observer")
+    public Result addObserver(@PathVariable Integer id, @RequestParam String observerType) {
+        OrderObserver observer = null;
+        switch (observerType.toLowerCase()) {
+            case "user":
+                observer = new UserNotifier();
+                break;
+            case "admin":
+                observer = new AdminNotifier();
+                break;
+            default:
+                return Result.error("Unknown observer type: " + observerType);
+        }
+        ordersService.addObserverToOrder(id, observer);
+        return Result.success();
+    }
 }

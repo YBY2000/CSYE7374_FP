@@ -1,7 +1,9 @@
 package com.example.service;
 
 import com.example.database.DatabaseUtil;
-import com.example.entity.Orders;
+import com.example.entity.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -10,7 +12,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class OrdersService {
+    
+    @Autowired
+    private UserNotifier userNotifier;
+    
+    @Autowired
+    private AdminNotifier adminNotifier;
     
     /**
      * Add new order 
@@ -21,7 +30,16 @@ public class OrdersService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "INSERT INTO orders (content, total, userId, time, status, orderNo) VALUES (?, ?, ?, ?, ?, ?)";
+            
+            if (order.getTime() == null || order.getTime().isEmpty()) {
+                order.setTime(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            }
+            
+            if (order.getOrderNo() == null || order.getOrderNo().isEmpty()) {
+                order.setOrderNo(generateOrderId());
+            }
+            
+            String sql = "INSERT INTO orders (content, total, user_id, time, status, order_no) VALUES (?, ?, ?, ?, ?, ?)";
             ps = conn.prepareStatement(sql);
             ps.setString(1, order.getContent());
             ps.setBigDecimal(2, order.getTotal());
@@ -34,6 +52,14 @@ public class OrdersService {
             if (result <= 0) {
                 throw new RuntimeException("Failed to add order");
             }
+            
+            if (order.getStatus() != null) {
+                order.updateStateFromStatus(order.getStatus());
+            }
+            
+            order.addObserver(userNotifier);
+            order.addObserver(adminNotifier);
+            order.notifyObservers("Order created with status: " + order.getStatus());
             
         } catch (SQLException e) {
             System.err.println("Add order failed: " + e.getMessage());
@@ -68,7 +94,7 @@ public class OrdersService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "UPDATE orders SET content=?, total=?, userId=?, time=?, status=?, orderNo=? WHERE id=?";
+            String sql = "UPDATE orders SET content=?, total=?, user_id=?, time=?, status=?, order_no=? WHERE id=?";
             ps = conn.prepareStatement(sql);
             ps.setString(1, order.getContent());
             ps.setBigDecimal(2, order.getTotal());
@@ -82,6 +108,12 @@ public class OrdersService {
             if (result <= 0) {
                 throw new RuntimeException("Order not found");
             }
+            
+            if (order.getStatus() != null) {
+                order.updateStateFromStatus(order.getStatus());
+            }
+            
+            order.notifyObservers("Order updated with status: " + order.getStatus());
             
         } catch (SQLException e) {
             System.err.println("Update order failed: " + e.getMessage());
@@ -101,7 +133,7 @@ public class OrdersService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "SELECT o.*, u.name as userName FROM orders o LEFT JOIN user u ON o.userId = u.id WHERE o.id = ?";
+            String sql = "SELECT o.*, u.name as userName FROM orders o LEFT JOIN user u ON o.user_id = u.id WHERE o.id = ?";
             ps = conn.prepareStatement(sql);
             ps.setInt(1, id);
             rs = ps.executeQuery();
@@ -111,11 +143,16 @@ public class OrdersService {
                 order.setId(rs.getInt("id"));
                 order.setContent(rs.getString("content"));
                 order.setTotal(rs.getBigDecimal("total"));
-                order.setUserId(rs.getInt("userId"));
+                order.setUserId(rs.getInt("user_id"));
                 order.setTime(rs.getString("time"));
                 order.setStatus(rs.getString("status"));
-                order.setOrderNo(rs.getString("orderNo"));
+                order.setOrderNo(rs.getString("order_no"));
                 order.setUserName(rs.getString("userName"));
+                
+                if (order.getStatus() != null) {
+                    order.updateStateFromStatus(order.getStatus());
+                }
+                
                 return order;
             }
             
@@ -139,7 +176,7 @@ public class OrdersService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "SELECT o.*, u.name as userName FROM orders o LEFT JOIN user u ON o.userId = u.id";
+            String sql = "SELECT o.*, u.name as userName FROM orders o LEFT JOIN user u ON o.user_id = u.id";
             StringBuilder whereClause = new StringBuilder();
             List<Object> params = new ArrayList<>();
             int paramIndex = 1;
@@ -154,7 +191,7 @@ public class OrdersService {
                 if (whereClause.length() > 0) {
                     whereClause.append(" AND");
                 }
-                whereClause.append(" o.userId = ?");
+                whereClause.append(" o.user_id = ?");
                 params.add(userId);
             }
             
@@ -175,11 +212,16 @@ public class OrdersService {
                 order.setId(rs.getInt("id"));
                 order.setContent(rs.getString("content"));
                 order.setTotal(rs.getBigDecimal("total"));
-                order.setUserId(rs.getInt("userId"));
+                order.setUserId(rs.getInt("user_id"));
                 order.setTime(rs.getString("time"));
                 order.setStatus(rs.getString("status"));
-                order.setOrderNo(rs.getString("orderNo"));
+                order.setOrderNo(rs.getString("order_no"));
                 order.setUserName(rs.getString("userName"));
+                
+                if (order.getStatus() != null) {
+                    order.updateStateFromStatus(order.getStatus());
+                }
+                
                 orders.add(order);
             }
             
@@ -237,7 +279,7 @@ public class OrdersService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "SELECT o.*, u.name as userName FROM orders o LEFT JOIN user u ON o.userId = u.id WHERE o.userId = ? ORDER BY o.id DESC";
+            String sql = "SELECT o.*, u.name as userName FROM orders o LEFT JOIN user u ON o.user_id = u.id WHERE o.user_id = ? ORDER BY o.id DESC";
             ps = conn.prepareStatement(sql);
             ps.setInt(1, userId);
             rs = ps.executeQuery();
@@ -247,11 +289,16 @@ public class OrdersService {
                 order.setId(rs.getInt("id"));
                 order.setContent(rs.getString("content"));
                 order.setTotal(rs.getBigDecimal("total"));
-                order.setUserId(rs.getInt("userId"));
+                order.setUserId(rs.getInt("user_id"));
                 order.setTime(rs.getString("time"));
                 order.setStatus(rs.getString("status"));
-                order.setOrderNo(rs.getString("orderNo"));
+                order.setOrderNo(rs.getString("order_no"));
                 order.setUserName(rs.getString("userName"));
+                
+                if (order.getStatus() != null) {
+                    order.updateStateFromStatus(order.getStatus());
+                }
+                
                 orders.add(order);
             }
             
@@ -274,9 +321,53 @@ public class OrdersService {
             if (result <= 0) {
                 throw new RuntimeException("Order not found");
             }
+            
+            Orders order = selectById(id);
+            if (order != null) {
+                order.updateStateFromStatus(status);
+                order.notifyObservers("Order status updated to: " + status);
+            }
+            
         } catch (SQLException e) {
             System.err.println("Update order status failed: " + e.getMessage());
             throw new RuntimeException("Failed to update order status", e);
         }
+    }
+
+    public void processOrderWithState(Integer orderId, String newState) {
+        Orders order = selectById(orderId);
+        if (order != null) {
+            order.changeState(newState);
+            updateById(order);
+        }
+    }
+
+    public void addObserverToOrder(Integer orderId, OrderObserver observer) {
+        Orders order = selectById(orderId);
+        if (order != null) {
+            order.addObserver(observer);
+            updateById(order);
+        }
+    }
+
+    public void handleOrderWithType(Integer orderId, String orderType) {
+        OrderHandler handler = OrderHandlerFactory.getHandler(orderType);
+        handler.handleOrder();
+        processOrderWithState(orderId, "preparing");
+    }
+
+    public Orders cloneOrder(Integer orderId) {
+        Orders originalOrder = selectById(orderId);
+        if (originalOrder != null) {
+            Orders clonedOrder = originalOrder.clone();
+            clonedOrder.setOrderNo(generateOrderId());
+            add(clonedOrder);
+            return clonedOrder;
+        }
+        return null;
+    }
+
+    private String generateOrderId() {
+        return java.util.UUID.randomUUID().toString().replace("-", "");
     }
 } 

@@ -19,9 +19,10 @@
         <el-table-column prop="userName" label="Username"/>
         <el-table-column prop="status" label="Order Status">
           <template #default="scope">
-            <el-tag type="primary" v-if="scope.row.status === 'PREPARING'">{{ scope.row.status }}</el-tag>
-            <el-tag type="warning" v-if="scope.row.status === 'PENDING'">{{ scope.row.status }}</el-tag>
-            <el-tag type="success" v-if="scope.row.status === 'COMPLETED'">{{ scope.row.status }}</el-tag>
+            <el-tag v-if="scope.row.status === 'PREPARING'" type="primary">{{ scope.row.status }}</el-tag>
+            <el-tag v-if="scope.row.status === 'PENDING'" type="warning">{{ scope.row.status }}</el-tag>
+            <el-tag v-if="scope.row.status === 'COMPLETED'" type="success">{{ scope.row.status }}</el-tag>
+            <span v-else>{{ scope.row.status }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180" >
@@ -60,9 +61,10 @@
 </template>
 
 <script setup>
-import {reactive} from "vue"
+import {reactive, onMounted, onUnmounted} from "vue"
 import request from "@/utils/request";
 import {ElMessage, ElMessageBox} from "element-plus";
+import websocketService from "@/utils/websocket";
 
 const data = reactive({
   user: JSON.parse(localStorage.getItem('canteen-user') || '{}'),
@@ -77,7 +79,7 @@ const data = reactive({
 
 const done = (row) => {
   let form = JSON.parse(JSON.stringify(row))
-  form.status = 'COMPELETED'
+  form.status = 'COMPLETED'
   request.put('/orders/update', form).then(res => {
     if (res.code === '200') {  // Success
       ElMessage.success('Operation successful')
@@ -103,6 +105,21 @@ const load = () => {
 }
 
 load()
+
+// WebSocket连接
+onMounted(() => {
+  const user = JSON.parse(localStorage.getItem('canteen-user') || '{}');
+  if (user.id) {
+    websocketService.connect(user.id.toString());
+  }
+});
+
+onUnmounted(() => {
+  websocketService.disconnect();
+});
+
+// 暴露刷新方法给WebSocket服务
+window.refreshOrders = load;
 
 const reset = () => {
   data.userName = null

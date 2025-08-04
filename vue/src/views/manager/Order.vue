@@ -62,9 +62,10 @@
 </template>
 
 <script setup>
-import {reactive} from "vue";
+import {reactive, onMounted, onUnmounted} from "vue";
 import request from "@/utils/request";
 import {ElMessage} from "element-plus";
+import websocketService from "@/utils/websocket";
 
 const data = reactive({
   table: {},
@@ -101,6 +102,18 @@ const loadFoods = () => {
   })
 }
 loadFoods()
+
+// WebSocket连接
+onMounted(() => {
+  const user = JSON.parse(localStorage.getItem('canteen-user') || '{}');
+  if (user.id) {
+    websocketService.connect(user.id.toString());
+  }
+});
+
+onUnmounted(() => {
+  websocketService.disconnect();
+});
 
 const showOrderList = () => {
   data.dialogShow = true
