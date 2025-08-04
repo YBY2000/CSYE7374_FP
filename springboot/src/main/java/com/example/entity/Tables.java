@@ -1,5 +1,7 @@
 package com.example.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class Tables {
     private Integer id;
     private String no;
@@ -7,6 +9,28 @@ public class Tables {
     private String free;
     private Integer userId;
     private String userName;
+    @JsonIgnore
+    private TableState state;
+
+    public Tables() {
+        this.state = new TableFreeState();
+    }
+
+    public void setState(TableState state) {
+        this.state = state;
+    }
+
+    public TableState getState() {
+        return state;
+    }
+
+    public void updateStatus() {
+        state.handleState();
+    }
+
+    public String getCurrentStateName() {
+        return state.getStateName();
+    }
 
     public String getUserName() {
         return userName;

@@ -14,36 +14,24 @@ public class TablesController {
 
     private final TablesService tablesService = new TablesService();
 
-    /**
-     * add
-     */
     @PostMapping("/add")
     public Result add(@RequestBody Tables tables) {
         tablesService.add(tables);
         return Result.success();
     }
 
-    /**
-     * delete
-     */
     @DeleteMapping("/delete/{id}")
     public Result delete(@PathVariable Integer id) {
         tablesService.deleteById(id);
         return Result.success();
     }
 
-    /**
-     * batch delete
-     */
     @DeleteMapping("/delete/batch")
     public Result delete(@RequestBody List<Integer> ids) {
         tablesService.deleteBatch(ids);
         return Result.success();
     }
 
-    /**
-     * update
-     */
     @PutMapping("/update")
     public Result update(@RequestBody Tables tables) {
         tablesService.updateById(tables);
@@ -62,9 +50,6 @@ public class TablesController {
         return Result.success();
     }
 
-    /**
-     * query(select) single data by id
-     */
     @GetMapping("/selectById/{id}")
     public Result selectById(@PathVariable Integer id) {
         Tables tables = tablesService.selectById(id);
@@ -77,18 +62,12 @@ public class TablesController {
         return Result.success(tables);
     }
 
-    /**
-     * query(select) all
-     */
     @GetMapping("/selectAll")
     public Result selectAll(String name) {
         List<Tables> list = tablesService.selectAll(name);
         return Result.success(list);
     }
 
-    /**
-     * query(select) all with page
-     */
     @GetMapping("/selectPage")
     public Result selectPage(
             String name,
@@ -98,4 +77,36 @@ public class TablesController {
         return Result.success(pageInfo);
     }
 
+    @PutMapping("/updateStatus/{id}")
+    public Result updateStatus(@PathVariable Integer id, @RequestParam String status) {
+        tablesService.updateStatus(id, status);
+        return Result.success();
+    }
+
+    @PutMapping("/assign/{tableId}")
+    public Result assignTable(@PathVariable Integer tableId, @RequestParam Integer userId) {
+        tablesService.assignTable(tableId, userId);
+        return Result.success();
+    }
+
+    @PutMapping("/release/{tableId}")
+    public Result releaseTable(@PathVariable Integer tableId) {
+        tablesService.releaseTable(tableId);
+        return Result.success();
+    }
+
+    @PutMapping("/reserve/{tableId}")
+    public Result reserveTable(@PathVariable Integer tableId) {
+        tablesService.reserveTable(tableId);
+        return Result.success();
+    }
+
+    @GetMapping("/getState/{id}")
+    public Result getTableState(@PathVariable Integer id) {
+        Tables table = tablesService.selectById(id);
+        if (table != null) {
+            return Result.success(table.getCurrentStateName());
+        }
+        return Result.error("Table not found");
+    }
 }

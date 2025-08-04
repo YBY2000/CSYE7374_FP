@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import {reactive} from "vue";
+import {reactive, onMounted, onActivated} from "vue";
 import request from "@/utils/request";
 import router from "@/router";
 import {ElMessage} from "element-plus";
@@ -42,9 +42,15 @@ const loadTables = () => {
     data.tables = res.data || []
   })
 }
-loadTables()
 
-// Place order - change dining table status
+onMounted(() => {
+  loadTables()
+})
+
+onActivated(() => {
+  loadTables()
+})
+
 const addOrder = (item) => {
   item.userId = user.id
   request.put('/tables/addOrder', item).then(res => {
