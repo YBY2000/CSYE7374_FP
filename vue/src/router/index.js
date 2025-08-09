@@ -17,6 +17,7 @@ const router = createRouter({
         { path: 'order', name: 'Order', component: () => import('@/views/manager/Order.vue')},
         { path: 'foods', name: 'Foods', component: () => import('@/views/manager/Foods.vue')},
         { path: 'orderManager', name: 'OrderManager', component: () => import('@/views/manager/OrderManager.vue')},
+        { path: 'discount', name: 'Discount', component: () => import('@/views/manager/DiscountSettings.vue')},
       ]
     },
     { path: '/login', name: 'Login', component: () => import('@/views/Login.vue')},

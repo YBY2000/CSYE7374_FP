@@ -13,7 +13,7 @@
         <el-table-column prop="content" label="Menu Content"/>
         <el-table-column prop="total" label="Total Price">
           <template #default="scope">
-            <strong style="color:red;">￥{{ scope.row.total }}</strong>
+            <strong style="color:red;">${{ scope.row.total }}</strong>
           </template>
         </el-table-column>
         <el-table-column prop="userName" label="Username"/>
@@ -65,7 +65,7 @@
         <p style="margin-bottom: 15px; font-size: 16px;">Are you sure you want to reorder the following items?</p>
         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
           <p><strong>Order Content:</strong> {{ data.reorderData.content }}</p>
-          <p><strong>Total Price:</strong> <span style="color: red; font-weight: bold;">￥{{ data.reorderData.total }}</span></p>
+          <p><strong>Total Price:</strong> <span style="color: red; font-weight: bold;">${{ data.reorderData.total }}</span></p>
         </div>
         <p style="color: #666; font-size: 14px;">Note: The new order will be created with your current table information</p>
       </div>

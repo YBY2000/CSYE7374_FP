@@ -33,6 +33,10 @@
             <el-icon><List /></el-icon>
             <span>Order Management</span>
           </el-menu-item>
+          <el-menu-item index="/discount" v-if="data.user.role === 'ADMIN'">
+            <el-icon><Discount /></el-icon>
+            <span>Pricing Strategy</span>
+          </el-menu-item>
           <el-sub-menu index="2" v-if="data.user.role === 'ADMIN'">
             <template #title>
               <el-icon><User /></el-icon>
@@ -83,7 +87,7 @@
 <script setup>
 import {reactive} from "vue";
 import { useRoute } from 'vue-router'
-import {User, UserFilled} from "@element-plus/icons-vue";
+import {User, UserFilled, HomeFilled, Dish, List, Bowl, SwitchButton, Discount} from "@element-plus/icons-vue";
 const $route = useRoute()
 
 const data = reactive({

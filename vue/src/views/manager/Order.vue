@@ -49,7 +49,17 @@
         <el-table-column prop="price" label="Price" />
         <el-table-column prop="num" label="Num of item" />
       </el-table>
-      <div style="text-align: right; color: red; font-weight: bold; font-size: 20px; margin-top: 10px">Total Price：${{ data.orderTotal }}</div>
+      <div style="text-align: right; margin-top: 10px">
+        <div v-if="data.pricingInfo.isDiscountPeriod" style="margin-bottom: 5px;">
+          <span style="color: #909399; text-decoration: line-through;">Original: ${{ data.orderTotal.toFixed(2) }}</span>
+        </div>
+        <div style="color: red; font-weight: bold; font-size: 20px;">
+          Final Price: ${{ data.pricingInfo.isDiscountPeriod ? data.finalOrderTotal.toFixed(2) : data.orderTotal.toFixed(2) }}
+        </div>
+        <div v-if="data.pricingInfo.isDiscountPeriod" style="color: #67c23a; font-size: 14px; margin-top: 5px;">
+          Estimated save: ${{ (data.orderTotal - data.finalOrderTotal).toFixed(2) }}
+        </div>
+      </div>
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="data.dialogShow = false">Close</el-button>
@@ -74,7 +84,12 @@ const data = reactive({
   dialogShow: false,
   orderList: [],
   total: 0,
-  orderTotal: 0
+  orderTotal: 0,
+  finalOrderTotal: 0,
+  pricingInfo: {
+    strategyType: 'REGULAR',
+    isDiscountPeriod: false
+  }
 })
 
 const loadTable = () => {
@@ -109,6 +124,8 @@ onMounted(() => {
   if (user.id) {
     websocketService.connect(user.id.toString());
   }
+  // Load pricing strategy information
+  loadPricingStrategy();
 });
 
 onUnmounted(() => {
@@ -136,8 +153,50 @@ const addOrder = (foods) => {
     // Sum: unit price * quantity
     data.orderTotal += item.price * item.num
   })
-  data.orderTotal.toFixed()
+  data.orderTotal = parseFloat(data.orderTotal.toFixed(2))
+  
+  // Calculate final price with current pricing strategy
+  calculateFinalPrice()
   ElMessage.success('Item added to order')
+}
+
+// Load current pricing strategy
+const loadPricingStrategy = async () => {
+  try {
+    const res = await request.get('/discount/strategy')
+    if (res.code === '200') {
+      data.pricingInfo = res.data
+    }
+  } catch (error) {
+    console.log('Failed to load pricing strategy:', error)
+  }
+}
+
+// Calculate final price based on current pricing strategy
+const calculateFinalPrice = async () => {
+  if (data.orderTotal === 0) {
+    data.finalOrderTotal = 0
+    return
+  }
+  
+  try {
+    const discountRes = await request.get('/discount/current')
+    if (discountRes.code === '200' && discountRes.data.isEnabled) {
+      // Apply discount
+      data.finalOrderTotal = data.orderTotal * discountRes.data.discountRate
+      data.pricingInfo.isDiscountPeriod = true
+      data.pricingInfo.strategyType = 'DISCOUNT'
+    } else {
+      // Regular pricing
+      data.finalOrderTotal = data.orderTotal
+      data.pricingInfo.isDiscountPeriod = false
+      data.pricingInfo.strategyType = 'REGULAR'
+    }
+    data.finalOrderTotal = parseFloat(data.finalOrderTotal.toFixed(2))
+  } catch (error) {
+    console.log('Failed to calculate final price:', error)
+    data.finalOrderTotal = data.orderTotal
+  }
 }
 
 // order logic

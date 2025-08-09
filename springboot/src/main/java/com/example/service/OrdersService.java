@@ -5,6 +5,7 @@ import com.example.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -20,6 +21,9 @@ public class OrdersService {
     
     @Autowired
     private AdminNotifier adminNotifier;
+    
+    @Autowired
+    private DiscountService discountService;
     
     /**
      * Add new order 
@@ -37,6 +41,12 @@ public class OrdersService {
             
             if (order.getOrderNo() == null || order.getOrderNo().isEmpty()) {
                 order.setOrderNo(generateOrderId());
+            }
+            
+            // Apply pricing strategy to calculate final price
+            if (order.getTotal() != null) {
+                BigDecimal finalPrice = discountService.calculateOrderPrice(order.getTotal());
+                order.setTotal(finalPrice);
             }
             
             String sql = "INSERT INTO orders (content, total, user_id, time, status, order_no) VALUES (?, ?, ?, ?, ?, ?)";
@@ -59,7 +69,11 @@ public class OrdersService {
             
             order.addObserver(userNotifier);
             order.addObserver(adminNotifier);
-            order.notifyObservers("Order created with status: " + order.getStatus());
+            
+            String strategyInfo = discountService.isDiscountPeriod() ? 
+                " (using discount pricing strategy)" : " (using regular pricing strategy)";
+            order.notifyObservers("Order created with " + discountService.getCurrentStrategyType() + 
+                                " pricing strategy: " + order.getStatus() + strategyInfo);
             
         } catch (SQLException e) {
             System.err.println("Add order failed: " + e.getMessage());
