@@ -24,6 +24,7 @@ public class Orders implements Cloneable, OrderSubject {
     public Orders() {
         this.observers = new ArrayList<>();
         this.state = new PendingState();
+        this.status = "PENDING";
     }
 
     public Integer getId() {
@@ -130,13 +131,18 @@ public class Orders implements Cloneable, OrderSubject {
         }
     }
 
-    public void changeState(String newState) {
+    /**
+     * Change order state with validation
+     */
+    public boolean changeState(String newState) {
+        if (state != null && !state.canTransitionTo(newState.toUpperCase())) {
+            throw new IllegalArgumentException("Invalid state transition from " + 
+                state.getStateName() + " to " + newState.toUpperCase());
+        }
+        
         switch (newState.toUpperCase()) {
             case "PENDING":
                 setState(new PendingState());
-                break;
-            case "PAID":
-                setState(new PaidState());
                 break;
             case "PREPARING":
                 setState(new PreparingState());
@@ -152,6 +158,7 @@ public class Orders implements Cloneable, OrderSubject {
         }
         this.status = newState.toUpperCase();
         notifyObservers("State changed to: " + newState);
+        return true;
     }
 
     public void updateStateFromStatus(String status) {
@@ -159,9 +166,6 @@ public class Orders implements Cloneable, OrderSubject {
             switch (status.toUpperCase()) {
                 case "PENDING":
                     setState(new PendingState());
-                    break;
-                case "PAID":
-                    setState(new PaidState());
                     break;
                 case "PREPARING":
                     setState(new PreparingState());
@@ -174,6 +178,20 @@ public class Orders implements Cloneable, OrderSubject {
                     break;
             }
         }
+    }
+
+    /**
+     * Get allowed transitions for current state
+     */
+    public String[] getAllowedTransitions() {
+        return state != null ? state.getAllowedTransitions() : new String[]{};
+    }
+
+    /**
+     * Check if transition to target state is allowed
+     */
+    public boolean canTransitionTo(String targetState) {
+        return state != null && state.canTransitionTo(targetState.toUpperCase());
     }
 
     @Override

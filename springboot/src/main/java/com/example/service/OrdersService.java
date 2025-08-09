@@ -26,7 +26,7 @@ public class OrdersService {
     private DiscountService discountService;
     
     /**
-     * Add new order 
+     * Add new order
      */
     public void add(Orders order) {
         Connection conn = null;
@@ -41,6 +41,11 @@ public class OrdersService {
             
             if (order.getOrderNo() == null || order.getOrderNo().isEmpty()) {
                 order.setOrderNo(generateOrderId());
+            }
+            
+            // Set default status to PENDING if not specified
+            if (order.getStatus() == null || order.getStatus().isEmpty()) {
+                order.setStatus("PENDING");
             }
             
             // Apply pricing strategy to calculate final price
@@ -351,8 +356,65 @@ public class OrdersService {
     public void processOrderWithState(Integer orderId, String newState) {
         Orders order = selectById(orderId);
         if (order != null) {
-            order.changeState(newState);
-            updateById(order);
+            try {
+                order.changeState(newState);
+                updateById(order);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid state transition: " + e.getMessage(), e);
+            }
+        } else {
+            throw new RuntimeException("Order not found");
+        }
+    }
+
+    /**
+     * Cancel order (can be called by user or admin)
+     */
+    public void cancelOrder(Integer orderId) {
+        Orders order = selectById(orderId);
+        if (order != null) {
+            try {
+                order.changeState("CANCELLED");
+                updateById(order);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Cannot cancel order: " + e.getMessage(), e);
+            }
+        } else {
+            throw new RuntimeException("Order not found");
+        }
+    }
+
+    /**
+     * Confirm order by admin (change to PREPARING)
+     */
+    public void confirmOrder(Integer orderId) {
+        Orders order = selectById(orderId);
+        if (order != null) {
+            try {
+                order.changeState("PREPARING");
+                updateById(order);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Cannot confirm order: " + e.getMessage(), e);
+            }
+        } else {
+            throw new RuntimeException("Order not found");
+        }
+    }
+
+    /**
+     * Complete order (change to COMPLETED)
+     */
+    public void completeOrder(Integer orderId) {
+        Orders order = selectById(orderId);
+        if (order != null) {
+            try {
+                order.changeState("COMPLETED");
+                updateById(order);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Cannot complete order: " + e.getMessage(), e);
+            }
+        } else {
+            throw new RuntimeException("Order not found");
         }
     }
 

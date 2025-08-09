@@ -26,38 +26,113 @@
             <el-tag v-else type="info">{{ scope.row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Actions" width="250" >
+        <el-table-column label="Actions" width="280">
           <template #default="scope">
-            <el-button v-if="data.user.role === 'USER' && scope.row.status === 'PENDING'" type="primary" @click="done(scope.row)">Checkout</el-button>
-            <el-button v-if="data.user.role === 'USER' && scope.row.status === 'COMPLETED'" type="success" @click="reorder(scope.row)" style="margin-left: 5px">Reorder</el-button>
-            <el-button v-if="data.user.role === 'ADMIN' && scope.row.status === 'PREPARING'" type="primary" @click="handleEdit(scope.row)">Edit</el-button>
-            <el-button v-if="data.user.role === 'ADMIN'" type="danger" @click="del(scope.row.id)">Delete</el-button>
+            <div class="action-buttons">
+              <!-- User actions -->
+              <div v-if="data.user.role === 'USER'" class="user-actions">
+                <el-tooltip content="Cancel this order" placement="top">
+                  <el-button 
+                    v-if="scope.row.status === 'PENDING'" 
+                    type="danger" 
+                    size="small"
+                    @click="cancelOrder(scope.row)"
+                  >
+                    <el-icon><Close /></el-icon>
+                    Cancel
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="Complete checkout for this order" placement="top">
+                  <el-button 
+                    v-if="scope.row.status === 'PREPARING'" 
+                    type="primary" 
+                    size="small"
+                    @click="completeOrder(scope.row)"
+                  >
+                    <el-icon><Check /></el-icon>
+                    Checkout
+                  </el-button>
+                </el-tooltip>
+                <el-tooltip content="Reorder the same items" placement="top">
+                  <el-button 
+                    v-if="scope.row.status === 'COMPLETED' || scope.row.status === 'CANCELLED'" 
+                    type="success" 
+                    size="small"
+                    @click="reorder(scope.row)"
+                  >
+                    <el-icon><Refresh /></el-icon>
+                    Reorder
+                  </el-button>
+                </el-tooltip>
+              </div>
+              
+              <!-- Admin actions -->
+              <div v-if="data.user.role === 'ADMIN'" class="admin-actions">
+                <div v-if="scope.row.status === 'PENDING'" class="action-group">
+                  <el-tooltip content="Confirm order for preparation" placement="top">
+                    <el-button 
+                      type="primary" 
+                      size="small"
+                      @click="confirmOrder(scope.row)"
+                    >
+                      <el-icon><Check /></el-icon>
+                      Confirm
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="Cancel this order" placement="top">
+                    <el-button 
+                      type="warning" 
+                      size="small"
+                      @click="cancelOrder(scope.row)"
+                    >
+                      <el-icon><Close /></el-icon>
+                      Cancel
+                    </el-button>
+                  </el-tooltip>
+                </div>
+                <div v-if="scope.row.status === 'PREPARING'" class="action-group">
+                  <el-tooltip content="Mark order as completed" placement="top">
+                    <el-button 
+                      type="success" 
+                      size="small"
+                      @click="completeOrder(scope.row)"
+                    >
+                      <el-icon><CircleCheck /></el-icon>
+                      Complete
+                    </el-button>
+                  </el-tooltip>
+                  <el-tooltip content="Cancel this order" placement="top">
+                    <el-button 
+                      type="warning" 
+                      size="small"
+                      @click="cancelOrder(scope.row)"
+                    >
+                      <el-icon><Close /></el-icon>
+                      Cancel
+                    </el-button>
+                  </el-tooltip>
+                </div>
+                <el-tooltip content="Delete this order permanently" placement="top">
+                  <el-button 
+                    type="danger" 
+                    size="small"
+                    @click="del(scope.row.id)"
+                    class="delete-btn"
+                  >
+                    <el-icon><Delete /></el-icon>
+                    Delete
+                  </el-button>
+                </el-tooltip>
+              </div>
+            </div>
           </template>
         </el-table-column>
       </el-table>
     </div>
 
     <div class="card" v-if="data.total">
-      <el-pagination background layout="prev, pager, next" @current-change="load" :page-size="data.pageSize" v-model:current-page="data.pageNum" :total="data.total"/>
+      <el-pagination background layout="prev, pager, next" @current-change="load" :page-size="data.pageSize" :current-page="data.pageNum" :total="data.total"/>
     </div>
-
-    <el-dialog v-model="data.formVisible" title="Information" width="30%" destroy-on-close>
-      <el-form :model="data.form" label-width="100px" style="padding-right: 50px">
-        <el-form-item label="Order Status">
-          <el-select style="width: 100%" v-model="data.form.status">
-            <el-option value="PREPARING"></el-option>
-            <el-option value="PENDING"></el-option>
-<!--            <el-option value="COMPLETED"></el-option>-->
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-      <span class="dialog-footer">
-        <el-button @click="data.formVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="save">Save</el-button>
-      </span>
-      </template>
-    </el-dialog>
 
     <!-- Reorder Confirmation Dialog -->
     <el-dialog v-model="data.reorderVisible" title="Confirm Reorder" width="40%" destroy-on-close>
@@ -85,6 +160,7 @@ import {reactive, onMounted, onUnmounted} from "vue"
 import request from "@/utils/request";
 import {ElMessage, ElMessageBox} from "element-plus";
 import websocketService from "@/utils/websocket";
+import { Close, Check, Refresh, CircleCheck, Delete } from '@element-plus/icons-vue'
 
 const data = reactive({
   user: JSON.parse(localStorage.getItem('canteen-user') || '{}'),
@@ -99,19 +175,6 @@ const data = reactive({
   reorderData: {}
 })
 
-const done = (row) => {
-  let form = JSON.parse(JSON.stringify(row))
-  form.status = 'COMPLETED'
-  request.put('/orders/update', form).then(res => {
-    if (res.code === '200') {
-      ElMessage.success('Operation successful')
-      load()
-    } else {
-      ElMessage.error(res.msg)
-    }
-  })
-}
-
 const load = () => {
   request.get('/orders/selectPage', {
     params: {
@@ -123,6 +186,69 @@ const load = () => {
   }).then(res => {
     data.tableData = res.data?.list || []
     data.total = res.data.total
+  })
+}
+
+// Cancel order
+const cancelOrder = (row) => {
+  ElMessageBox.confirm('Are you sure you want to cancel this order?', 'Confirm Cancel', {
+    type: 'warning'
+  }).then(() => {
+    request.put(`/orders/${row.id}/cancel`).then(res => {
+      if (res.code === '200') {
+        ElMessage.success('Order cancelled successfully')
+        load()
+      } else {
+        ElMessage.error(res.msg || 'Failed to cancel order')
+      }
+    }).catch(error => {
+      ElMessage.error('Failed to cancel order')
+      console.error('Cancel order failed:', error)
+    })
+  }).catch(() => {
+    // User cancelled the confirmation
+  })
+}
+
+// Confirm order (admin only)
+const confirmOrder = (row) => {
+  ElMessageBox.confirm('Are you sure you want to confirm this order for preparation?', 'Confirm Order', {
+    type: 'info'
+  }).then(() => {
+    request.put(`/orders/${row.id}/confirm`).then(res => {
+      if (res.code === '200') {
+        ElMessage.success('Order confirmed successfully')
+        load()
+      } else {
+        ElMessage.error(res.msg || 'Failed to confirm order')
+      }
+    }).catch(error => {
+      ElMessage.error('Failed to confirm order')
+      console.error('Confirm order failed:', error)
+    })
+  }).catch(() => {
+    // User cancelled the confirmation
+  })
+}
+
+// Complete order
+const completeOrder = (row) => {
+  ElMessageBox.confirm('Are you sure you want to complete this order?', 'Confirm Complete', {
+    type: 'info'
+  }).then(() => {
+    request.put(`/orders/${row.id}/complete`).then(res => {
+      if (res.code === '200') {
+        ElMessage.success('Order completed successfully')
+        load()
+      } else {
+        ElMessage.error(res.msg || 'Failed to complete order')
+      }
+    }).catch(error => {
+      ElMessage.error('Failed to complete order')
+      console.error('Complete order failed:', error)
+    })
+  }).catch(() => {
+    // User cancelled the confirmation
   })
 }
 
@@ -144,28 +270,6 @@ window.refreshOrders = load;
 const reset = () => {
   data.userName = null
   load()
-}
-
-
-const save = () => {
-  request.request({
-    method: data.form.id ? 'PUT' : 'POST',
-    url: data.form.id ? '/orders/update' : '/orders/add',
-    data: data.form
-  }).then(res => {
-    if (res.code === '200') {
-      ElMessage.success('Operation successful')
-      data.formVisible = false
-      load()
-    } else {
-      ElMessage.error(res.msg)
-    }
-  })
-}
-
-const handleEdit = (row) => {
-  data.form = JSON.parse(JSON.stringify(row))
-  data.formVisible = true
 }
 
 const reorder = (row) => {
@@ -223,3 +327,103 @@ const del = (id) => {
 }
 
 </script>
+
+<style scoped>
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.user-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.admin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.delete-btn {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* Ensure buttons don't wrap awkwardly */
+.el-button {
+  white-space: nowrap;
+  min-width: 70px;
+  height: 28px;
+  font-size: 12px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* Icon styling */
+.el-button .el-icon {
+  font-size: 14px;
+  margin-right: 2px;
+}
+
+/* Button hover effects */
+.el-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .action-buttons {
+    gap: 4px;
+  }
+  
+  .user-actions,
+  .action-group {
+    gap: 4px;
+  }
+  
+  .el-button {
+    min-width: 60px;
+    font-size: 11px;
+    padding: 4px 8px;
+    height: 24px;
+  }
+}
+
+/* Status-specific button styling */
+.el-button--primary {
+  background: linear-gradient(135deg, #409eff 0%, #337ecc 100%);
+  border: none;
+}
+
+.el-button--success {
+  background: linear-gradient(135deg, #67c23a 0%, #529b2e 100%);
+  border: none;
+}
+
+.el-button--warning {
+  background: linear-gradient(135deg, #e6a23c 0%, #cf9236 100%);
+  border: none;
+}
+
+.el-button--danger {
+  background: linear-gradient(135deg, #f56c6c 0%, #dd6161 100%);
+  border: none;
+}
+</style>

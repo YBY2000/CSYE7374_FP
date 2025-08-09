@@ -76,10 +76,10 @@ CREATE TABLE `orders`  (
 -- ----------------------------
 -- Records of orders
 -- ----------------------------
-INSERT INTO `orders` VALUES (4, 'Tendersx1, Signature Chickenx1', 67, 1, '2024-06-27 11:29:55', 'PREPARING', '56a456d0773c4019a9f3a1b19cb57d69');
-INSERT INTO `orders` VALUES (5, 'Tendersx3，Signature Chickenx3', 201, 1, '2024-06-27 11:37:23', 'PREPARING', 'ee7c36e22b6345fb9799c593fcca3d35');
-INSERT INTO `orders` VALUES (6, 'Tendersx3，Signature Chickenx3', 201, 3, '2024-06-27 11:47:57', 'COMPLETED', '684833a767d94c318e63c9308b5706b0');
-INSERT INTO `orders` VALUES (7, 'Tendersx1，Signature Chickenx1', 67, 7, '2024-06-27 12:00:13', 'COMPLETED', '99b2d93ca12f428ea0e018f571dcbce7');
+INSERT INTO `orders` VALUES (4, 'Tenders * 1, Signature Chicken * 1', 67, 1, '2024-06-27 11:29:55', 'PREPARING', '56a456d0773c4019a9f3a1b19cb57d69');
+INSERT INTO `orders` VALUES (5, 'Tenders * 3，Signature Chicken * 3', 201, 1, '2024-06-27 11:37:23', 'PREPARING', 'ee7c36e22b6345fb9799c593fcca3d35');
+INSERT INTO `orders` VALUES (6, 'Tenders * 3，Signature Chicken * 3', 201, 3, '2024-06-27 11:47:57', 'COMPLETED', '684833a767d94c318e63c9308b5706b0');
+INSERT INTO `orders` VALUES (7, 'Tenders * 1，Signature Chicken * 1', 67, 7, '2024-06-27 12:00:13', 'COMPLETED', '99b2d93ca12f428ea0e018f571dcbce7');
 
 -- ----------------------------
 -- Table structure for tables

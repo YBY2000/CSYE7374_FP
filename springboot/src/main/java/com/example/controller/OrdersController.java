@@ -144,6 +144,33 @@ public class OrdersController {
         return Result.success();
     }
 
+    /**
+     * Cancel order (can be called by user or admin)
+     */
+    @PutMapping("/{id}/cancel")
+    public Result cancelOrder(@PathVariable Integer id) {
+        ordersService.cancelOrder(id);
+        return Result.success("Order cancelled successfully");
+    }
+
+    /**
+     * Confirm order by admin (change to PREPARING)
+     */
+    @PutMapping("/{id}/confirm")
+    public Result confirmOrder(@PathVariable Integer id) {
+        ordersService.confirmOrder(id);
+        return Result.success("Order confirmed successfully");
+    }
+
+    /**
+     * Complete order (change to COMPLETED)
+     */
+    @PutMapping("/{id}/complete")
+    public Result completeOrder(@PathVariable Integer id) {
+        ordersService.completeOrder(id);
+        return Result.success("Order completed successfully");
+    }
+
     @PostMapping("/{id}/clone")
     public Result cloneOrder(@PathVariable Integer id) {
         Orders clonedOrder = ordersService.cloneOrder(id);
