@@ -1,16 +1,9 @@
 <template>
   <div>
-    <div style="height: 60px; background-color: #fff; display: flex; align-items: center; border-bottom: 1px solid #ddd">
-      <div style="flex: 1">
-        <div style="padding-left: 20px; display: flex; align-items: center">
-          <img src="@/assets/imgs/logo.png" alt="" style="width: 40px">
-          <div style="font-weight: bold; font-size: 24px; margin-left: 5px; color: #F9B44C">Online Ordering System</div>
-        </div>
-      </div>
-      <div style="width: fit-content; padding-right: 10px; display: flex; align-items: center;">
-        <img :src="data.user?.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" alt="" style="width: 40px; height: 40px; border-radius: 50%">
-        <span style="margin-left: 5px">{{ data.user?.name }}</span>
-      </div>
+    <div style="height: 60px; line-height: 60px; background-color: #385bde; padding: 0 10px; position: relative;">
+      <img src="@/assets/imgs/logo.png" alt="" style="width: 40px; height: 40px; margin-right: 20px; position: relative; top: 10px">
+      <span style="color: white; font-size: 18px; line-height: 60px">Canteen management</span>
+      <div style="position: absolute; top: 30px; right: 10px; color: white">{{ data.user.name }}</div>
     </div>
 
     <div style="display: flex">
@@ -85,16 +78,44 @@
 </template>
 
 <script setup>
-import {reactive} from "vue";
+import {reactive, onMounted, onUnmounted} from "vue";
 import { useRoute } from 'vue-router'
 import {User, UserFilled, HomeFilled, Dish, List, Bowl, SwitchButton, Discount} from "@element-plus/icons-vue";
+import { ElMessage } from 'element-plus';
+import websocketService from "@/utils/websocket";
+
 const $route = useRoute()
 
 const data = reactive({
   user: JSON.parse(localStorage.getItem('canteen-user') || '{}')
 })
 
+onMounted(() => {
+  const user = JSON.parse(localStorage.getItem('canteen-user') || '{}');
+  console.log('Manager.vue mounted, user:', user);
+  
+  // 确保 ElMessage 可以全局访问
+  window.ElMessage = ElMessage;
+  
+  if (user.id) {
+    console.log('Connecting WebSocket for user ID:', user.id);
+    websocketService.connect(user.id.toString());
+  } else {
+    console.warn('No user ID found, cannot connect WebSocket');
+  }
+  
+  if ('Notification' in window && Notification.permission === 'default') {
+    console.log('Requesting notification permission');
+    Notification.requestPermission();
+  }
+});
+
+onUnmounted(() => {
+  websocketService.disconnect();
+});
+
 const logout = () => {
+  websocketService.disconnect();
   localStorage.removeItem('canteen-user')
 }
 
@@ -110,8 +131,5 @@ const updateUser = () => {
 .el-menu-item:hover {
   background-color: #e9eeff !important;
   color: #1450aa;
-}
-:deep(th)  {
-  color: #333;
 }
 </style>

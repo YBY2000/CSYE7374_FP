@@ -140,10 +140,9 @@
 </template>
 
 <script setup>
-import {reactive, onMounted, onUnmounted} from "vue"
+import {reactive, onMounted} from "vue"
 import request from "@/utils/request";
 import {ElMessage, ElMessageBox} from "element-plus";
-import websocketService from "@/utils/websocket";
 import { Close, Check, Refresh, CircleCheck, Delete } from '@element-plus/icons-vue'
 
 const data = reactive({
@@ -236,25 +235,18 @@ const completeOrder = (row) => {
   })
 }
 
-load()
-
 onMounted(() => {
-  const user = JSON.parse(localStorage.getItem('canteen-user') || '{}');
-  if (user.id) {
-    websocketService.connect(user.id.toString());
-  }
+  load();
 });
 
-onUnmounted(() => {
-  websocketService.disconnect();
-});
-
-window.refreshOrders = load;
+load()
 
 const reset = () => {
   data.userName = null
   load()
 }
+
+window.refreshOrders = load;
 
 const reorder = (row) => {
   data.reorderData = JSON.parse(JSON.stringify(row))
@@ -309,6 +301,8 @@ const del = (id) => {
     console.log(err)
   })
 }
+
+
 
 </script>
 
@@ -409,5 +403,64 @@ const del = (id) => {
 .el-button--danger {
   background: linear-gradient(135deg, #f56c6c 0%, #dd6161 100%);
   border: none;
+}
+
+.order-status {
+  transition: all 0.3s ease;
+}
+
+.status-pending {
+  color: #e6a23c;
+  animation: pulse 2s infinite;
+}
+
+.status-preparing {
+  color: #409eff;
+  animation: preparing 1.5s infinite;
+}
+
+.status-completed {
+  color: #67c23a;
+}
+
+.status-cancelled {
+  color: #f56c6c;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+@keyframes preparing {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.order-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  max-width: 300px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 </style>

@@ -25,6 +25,9 @@ public class OrdersService {
     @Autowired
     private DiscountService discountService;
     
+    @Autowired
+    private WebSocketService webSocketService;
+    
     /**
      * Add new order
      */
@@ -132,7 +135,7 @@ public class OrdersService {
                 order.updateStateFromStatus(order.getStatus());
             }
             
-            order.notifyObservers("Order updated with status: " + order.getStatus());
+            order.notifyObservers("Order updated: " + order.getStatus());
             
         } catch (SQLException e) {
             System.err.println("Update order failed: " + e.getMessage());
@@ -195,31 +198,22 @@ public class OrdersService {
         
         try {
             conn = DatabaseUtil.getConnection();
-            String sql = "SELECT o.*, u.name as userName FROM orders o LEFT JOIN user u ON o.user_id = u.id";
-            StringBuilder whereClause = new StringBuilder();
+            StringBuilder sql = new StringBuilder("SELECT o.*, u.name as userName FROM orders o LEFT JOIN user u ON o.user_id = u.id WHERE 1=1");
             List<Object> params = new ArrayList<>();
-            int paramIndex = 1;
             
-            if (userName != null && !userName.isEmpty()) {
-                whereClause.append(" u.name LIKE ?");
+            if (userName != null && !userName.trim().isEmpty()) {
+                sql.append(" AND u.name LIKE ?");
                 params.add("%" + userName + "%");
-                paramIndex++;
             }
             
             if (userId != null) {
-                if (whereClause.length() > 0) {
-                    whereClause.append(" AND");
-                }
-                whereClause.append(" o.user_id = ?");
+                sql.append(" AND o.user_id = ?");
                 params.add(userId);
             }
             
-            if (whereClause.length() > 0) {
-                sql += " WHERE" + whereClause.toString();
-            }
-            sql += " ORDER BY o.id DESC";
+            sql.append(" ORDER BY o.id DESC");
             
-            ps = conn.prepareStatement(sql);
+            ps = conn.prepareStatement(sql.toString());
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
@@ -374,8 +368,12 @@ public class OrdersService {
         Orders order = selectById(orderId);
         if (order != null) {
             try {
+                String oldStatus = order.getStatus();
                 order.changeState("CANCELLED");
                 updateById(order);
+                
+                sendOrderStatusNotification(order, oldStatus, "CANCELLED", "Order has been cancelled");
+                
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Cannot cancel order: " + e.getMessage(), e);
             }
@@ -391,8 +389,12 @@ public class OrdersService {
         Orders order = selectById(orderId);
         if (order != null) {
             try {
+                String oldStatus = order.getStatus();
                 order.changeState("PREPARING");
                 updateById(order);
+                
+                sendOrderStatusNotification(order, oldStatus, "PREPARING", "Order has been confirmed and is now being prepared");
+                
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Cannot confirm order: " + e.getMessage(), e);
             }
@@ -408,8 +410,12 @@ public class OrdersService {
         Orders order = selectById(orderId);
         if (order != null) {
             try {
+                String oldStatus = order.getStatus();
                 order.changeState("COMPLETED");
                 updateById(order);
+                
+                sendOrderStatusNotification(order, oldStatus, "COMPLETED", "Order has been completed and is ready for pickup");
+                
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Cannot complete order: " + e.getMessage(), e);
             }
@@ -435,6 +441,41 @@ public class OrdersService {
             return clonedOrder;
         }
         return null;
+    }
+
+    private void sendOrderStatusNotification(Orders order, String oldStatus, String newStatus, String message) {
+        try {
+            System.out.println("=== Sending WebSocket Notification ===");
+            System.out.println("Order ID: " + order.getId());
+            System.out.println("Order No: " + order.getOrderNo());
+            System.out.println("User ID: " + order.getUserId());
+            System.out.println("User Name: " + order.getUserName());
+            System.out.println("Old Status: " + oldStatus);
+            System.out.println("New Status: " + newStatus);
+            System.out.println("Message: " + message);
+            
+            webSocketService.sendOrderStatusUpdate(
+                order.getUserId().toString(), 
+                order.getId(), 
+                newStatus, 
+                message
+            );
+            System.out.println("✓ Sent user notification successfully");
+            
+            String adminMessage = String.format("Order #%s (%s) status changed from %s to %s", 
+                order.getOrderNo(), 
+                order.getUserName() != null ? order.getUserName() : "Unknown User",
+                oldStatus, 
+                newStatus
+            );
+            webSocketService.sendOrderUpdateToAdmin(order.getId(), newStatus, adminMessage);
+            System.out.println("✓ Sent admin notification successfully");
+            System.out.println("========================================");
+            
+        } catch (Exception e) {
+            System.err.println("Failed to send WebSocket notification: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private String generateOrderId() {
