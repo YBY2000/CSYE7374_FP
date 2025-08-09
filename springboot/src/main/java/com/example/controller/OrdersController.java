@@ -3,6 +3,7 @@ package com.example.controller;
 import com.example.common.Result;
 import com.example.entity.*;
 import com.example.service.OrdersService;
+import com.example.service.FoodsService;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ public class OrdersController {
 
     @Autowired
     private OrdersService ordersService;
+    private final FoodsService foodsService = new FoodsService();
 
     /**
      * add
@@ -22,6 +24,59 @@ public class OrdersController {
     @PostMapping("/add")
     public Result add(@RequestBody Orders orders) {
         ordersService.add(orders);
+        return Result.success();
+    }
+
+    /**
+     * Create order from items with decorators, compute total and content on server
+     */
+    @PostMapping("/addWithItems")
+    public Result addWithItems(@RequestBody CreateOrderRequest req) {
+        if (req == null || req.getItems() == null || req.getItems().isEmpty()) {
+            return Result.error("Empty items");
+        }
+
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        StringBuilder contentBuilder = new StringBuilder();
+
+        for (OrderItemRequest item : req.getItems()) {
+            Foods food = foodsService.selectById(item.getFoodId());
+            if (food == null) {
+                return Result.error("Food not found: " + item.getFoodId());
+            }
+            com.example.entity.FoodItem decorated = food;
+            java.util.List<String> decs = item.getDecorators();
+            if (decs != null) {
+                for (String code : decs) {
+                    Decorator d = Decorator.fromCode(code);
+                    if (d != null) {
+                        decorated = d.apply(decorated);
+                    }
+                }
+            }
+
+            java.math.BigDecimal linePrice = decorated.getPrice().multiply(java.math.BigDecimal.valueOf(item.getQuantity()));
+            total = total.add(linePrice);
+
+            contentBuilder.append(food.getName())
+                .append(" * ")
+                .append(item.getQuantity());
+            if (decs != null && !decs.isEmpty()) {
+                contentBuilder.append(" (").append(String.join(", ", decs)).append(")");
+            }
+            contentBuilder.append(", ");
+        }
+
+        String content = contentBuilder.length() > 1 ? contentBuilder.substring(0, contentBuilder.length() - 2) : "";
+
+        Orders order = new Orders();
+        order.setContent(content);
+        // DB column is DECIMAL(10,0); round to integer to avoid truncation
+        order.setTotal(total.setScale(0, java.math.RoundingMode.HALF_UP));
+        order.setUserId(req.getUserId());
+        order.setStatus(req.getStatus() != null ? req.getStatus() : "PENDING");
+
+        ordersService.add(order);
         return Result.success();
     }
 
