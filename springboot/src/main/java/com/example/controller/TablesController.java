@@ -84,37 +84,4 @@ public class TablesController {
         PageInfo<Tables> pageInfo = tablesService.selectPage(name, pageNum, pageSize);
         return Result.success(pageInfo);
     }
-
-    @PutMapping("/updateStatus/{id}")
-    public Result updateStatus(@PathVariable Integer id, @RequestParam String status) {
-        tablesService.updateStatus(id, status);
-        return Result.success();
-    }
-
-    @PutMapping("/assign/{tableId}")
-    public Result assignTable(@PathVariable Integer tableId, @RequestParam Integer userId) {
-        tablesService.assignTable(tableId, userId);
-        return Result.success();
-    }
-
-    @PutMapping("/release/{tableId}")
-    public Result releaseTable(@PathVariable Integer tableId) {
-        tablesService.releaseTable(tableId);
-        return Result.success();
-    }
-
-    @PutMapping("/reserve/{tableId}")
-    public Result reserveTable(@PathVariable Integer tableId) {
-        tablesService.reserveTable(tableId);
-        return Result.success();
-    }
-
-    @GetMapping("/getState/{id}")
-    public Result getTableState(@PathVariable Integer id) {
-        Tables table = tablesService.selectById(id);
-        if (table != null) {
-            return Result.success(table.getCurrentStateName());
-        }
-        return Result.error("Table not found");
-    }
 }

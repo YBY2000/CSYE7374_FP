@@ -72,7 +72,11 @@ public class TablesService {
                 throw new RuntimeException("Table not found");
             }
             
-            updateTableState(table);
+            if ("Yes".equals(table.getFree())) {
+                table.setState(new TableFreeState());
+            } else {
+                table.setState(new TableOccupiedState());
+            }
             
         } catch (SQLException e) {
             System.err.println("Update table failed: " + e.getMessage());
@@ -99,11 +103,16 @@ public class TablesService {
                 table.setId(rs.getInt("id"));
                 table.setNo(rs.getString("no"));
                 table.setUnit(rs.getString("unit"));
-                table.setFree(rs.getString("free"));
                 table.setUserId(rs.getInt("user_id"));
                 table.setUserName(rs.getString("userName"));
                 
-                updateTableStateFromDatabase(table);
+                String freeStatus = rs.getString("free");
+                if ("Yes".equals(freeStatus)) {
+                    table.setState(new TableFreeState());
+                } else {
+                    table.setState(new TableOccupiedState());
+                }
+                
                 return table;
             }
             
@@ -142,11 +151,16 @@ public class TablesService {
                 table.setId(rs.getInt("id"));
                 table.setNo(rs.getString("no"));
                 table.setUnit(rs.getString("unit"));
-                table.setFree(rs.getString("free"));
                 table.setUserId(rs.getInt("user_id"));
                 table.setUserName(rs.getString("userName"));
                 
-                updateTableStateFromDatabase(table);
+                String freeStatus = rs.getString("free");
+                if ("Yes".equals(freeStatus)) {
+                    table.setState(new TableFreeState());
+                } else {
+                    table.setState(new TableOccupiedState());
+                }
+                
                 tables.add(table);
             }
             
@@ -176,11 +190,16 @@ public class TablesService {
                 table.setId(rs.getInt("id"));
                 table.setNo(rs.getString("no"));
                 table.setUnit(rs.getString("unit"));
-                table.setFree(rs.getString("free"));
                 table.setUserId(rs.getInt("user_id"));
                 table.setUserName(rs.getString("userName"));
                 
-                updateTableStateFromDatabase(table);
+                String freeStatus = rs.getString("free");
+                if ("Yes".equals(freeStatus)) {
+                    table.setState(new TableFreeState());
+                } else {
+                    table.setState(new TableOccupiedState());
+                }
+                
                 return table;
             }
             
@@ -195,27 +214,27 @@ public class TablesService {
     
     public void addOrder(Tables table) {
         try {
-            // First check if user already has a table assigned
             Tables existingTable = selectByUserId(table.getUserId());
             if (existingTable != null) {
                 throw new RuntimeException("User already has a table assigned: " + existingTable.getNo());
             }
             
-            // Check if the target table is actually available
             Tables targetTable = selectById(table.getId());
-            if (targetTable == null || !"Yes".equals(targetTable.getFree())) {
-                throw new RuntimeException("Table is not available");
+            if (targetTable == null) {
+                throw new RuntimeException("Table not found");
             }
             
-            // Use conditional update to prevent race conditions
-            String sql = "UPDATE tables SET user_id = ?, free = 'No' WHERE id = ? AND free = 'Yes' AND user_id IS NULL";
-            int result = DatabaseUtil.executeUpdate(sql, table.getUserId(), table.getId());
+            targetTable.occupyTable(table.getUserId());
+            
+            String sql = "UPDATE tables SET user_id = ?, free = ? WHERE id = ?";
+            int result = DatabaseUtil.executeUpdate(sql, 
+                targetTable.getUserId(), 
+                targetTable.getFree(), 
+                targetTable.getId());
+                
             if (result <= 0) {
-                throw new RuntimeException("Table assignment failed - table may have been taken by another user");
+                throw new RuntimeException("Table assignment failed");
             }
-            
-            table.setFree("No");
-            updateTableState(table);
             
         } catch (SQLException e) {
             System.err.println("Add order to table failed: " + e.getMessage());
@@ -225,15 +244,22 @@ public class TablesService {
     
     public void removeOrder(Tables table) {
         try {
-            String sql = "UPDATE tables SET user_id = NULL, free = 'Yes' WHERE id = ?";
-            int result = DatabaseUtil.executeUpdate(sql, table.getId());
-            if (result <= 0) {
+            Tables currentTable = selectById(table.getId());
+            if (currentTable == null) {
                 throw new RuntimeException("Table not found");
             }
             
-            table.setFree("Yes");
-            table.setUserId(null);
-            updateTableState(table);
+            currentTable.releaseTable();
+            
+            String sql = "UPDATE tables SET user_id = ?, free = ? WHERE id = ?";
+            int result = DatabaseUtil.executeUpdate(sql, 
+                currentTable.getUserId(), 
+                currentTable.getFree(), 
+                currentTable.getId());
+                
+            if (result <= 0) {
+                throw new RuntimeException("Table update failed");
+            }
             
         } catch (SQLException e) {
             System.err.println("Remove order from table failed: " + e.getMessage());
@@ -268,104 +294,5 @@ public class TablesService {
         
         return pageInfo;
     }
-    
-    public void updateStatus(Integer id, String status) {
-        try {
-            String sql = "UPDATE tables SET free = ? WHERE id = ?";
-            int result = DatabaseUtil.executeUpdate(sql, status, id);
-            if (result <= 0) {
-                throw new RuntimeException("Table not found");
-            }
-            
-            Tables table = selectById(id);
-            if (table != null) {
-                table.setFree(status);
-                updateTableState(table);
-            }
-            
-        } catch (SQLException e) {
-            System.err.println("Update table status failed: " + e.getMessage());
-            throw new RuntimeException("Failed to update table status", e);
-        }
-    }
-    
-    public void assignTable(Integer tableId, Integer userId) {
-        try {
-            String sql = "UPDATE tables SET user_id = ?, free = 'No' WHERE id = ?";
-            int result = DatabaseUtil.executeUpdate(sql, userId, tableId);
-            if (result <= 0) {
-                throw new RuntimeException("Table not found");
-            }
-            
-            Tables table = selectById(tableId);
-            if (table != null) {
-                table.setUserId(userId);
-                table.setFree("No");
-                updateTableState(table);
-            }
-            
-        } catch (SQLException e) {
-            System.err.println("Assign table failed: " + e.getMessage());
-            throw new RuntimeException("Failed to assign table", e);
-        }
-    }
-    
-    public void releaseTable(Integer tableId) {
-        try {
-            String sql = "UPDATE tables SET user_id = NULL, free = 'Yes' WHERE id = ?";
-            int result = DatabaseUtil.executeUpdate(sql, tableId);
-            if (result <= 0) {
-                throw new RuntimeException("Table not found");
-            }
-            
-            Tables table = selectById(tableId);
-            if (table != null) {
-                table.setUserId(null);
-                table.setFree("Yes");
-                updateTableState(table);
-            }
-            
-        } catch (SQLException e) {
-            System.err.println("Release table failed: " + e.getMessage());
-            throw new RuntimeException("Failed to release table", e);
-        }
-    }
-    
-    public void reserveTable(Integer tableId) {
-        try {
-            String sql = "UPDATE tables SET free = 'No' WHERE id = ?";
-            int result = DatabaseUtil.executeUpdate(sql, tableId);
-            if (result <= 0) {
-                throw new RuntimeException("Table not found");
-            }
-            
-            Tables table = selectById(tableId);
-            if (table != null) {
-                table.setFree("No");
-                updateTableState(table);
-            }
-            
-        } catch (SQLException e) {
-            System.err.println("Reserve table failed: " + e.getMessage());
-            throw new RuntimeException("Failed to reserve table", e);
-        }
-    }
-    
-    private void updateTableState(Tables table) {
-        String status = table.getFree();
-        if ("Yes".equals(status)) {
-            table.setState(new TableFreeState());
-        } else if ("No".equals(status)) {
-            table.setState(new TableOccupiedState());
-        }
-    }
-    
-    private void updateTableStateFromDatabase(Tables table) {
-        String status = table.getFree();
-        if ("Yes".equals(status)) {
-            table.setState(new TableFreeState());
-        } else if ("No".equals(status)) {
-            table.setState(new TableOccupiedState());
-        }
-    }
+
 } 

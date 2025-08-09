@@ -1,14 +1,26 @@
 package com.example.entity;
 
-public class TableFreeState implements TableState {
+public class TableFreeState extends TableState {
     
     @Override
-    public void handleState() {
-        System.out.println("Table is available for use");
+    public void occupyTable(Tables table, Integer userId) {
+        if (userId == null) {
+            throw new RuntimeException("User ID cannot be null");
+        }
+        
+        table.setUserId(userId);
+        changeState(table, new TableOccupiedState());
+        
+        System.out.println("✅ Table " + table.getNo() + " has been occupied by user " + userId);
     }
     
     @Override
-    public String getStateName() {
+    public void releaseTable(Tables table) {
+        throw new RuntimeException("Cannot release a table that is already free");
+    }
+    
+    @Override
+    public String getFreeStatus() {
         return "Yes";
     }
 } 
