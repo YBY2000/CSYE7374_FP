@@ -31,98 +31,82 @@
             <div class="action-buttons">
               <!-- User actions -->
               <div v-if="data.user.role === 'USER'" class="user-actions">
-                <el-tooltip content="Cancel this order" placement="top">
+                <el-button 
+                  v-if="scope.row.status === 'PENDING'" 
+                  type="danger" 
+                  size="small"
+                  @click="cancelOrder(scope.row)"
+                >
+                  <el-icon><Close /></el-icon>
+                  Cancel
+                </el-button>
+                <el-button 
+                  v-if="scope.row.status === 'PREPARING'" 
+                  type="primary" 
+                  size="small"
+                  @click="completeOrder(scope.row)"
+                >
+                  <el-icon><Check /></el-icon>
+                  Checkout
+                </el-button>
+                <el-button 
+                  v-if="scope.row.status === 'COMPLETED' || scope.row.status === 'CANCELLED'" 
+                  type="success" 
+                  size="small"
+                  @click="reorder(scope.row)"
+                >
+                  <el-icon><Refresh /></el-icon>
+                  Reorder
+                </el-button>
+              </div>
+              
+              <!-- Admin actions -->
+              <div v-if="data.user.role === 'ADMIN'" class="admin-actions">
+                <div v-if="scope.row.status === 'PENDING'" class="action-group">
                   <el-button 
-                    v-if="scope.row.status === 'PENDING'" 
-                    type="danger" 
+                    type="primary" 
+                    size="small"
+                    @click="confirmOrder(scope.row)"
+                  >
+                    <el-icon><Check /></el-icon>
+                    Confirm
+                  </el-button>
+                  <el-button 
+                    type="warning" 
                     size="small"
                     @click="cancelOrder(scope.row)"
                   >
                     <el-icon><Close /></el-icon>
                     Cancel
                   </el-button>
-                </el-tooltip>
-                <el-tooltip content="Complete checkout for this order" placement="top">
+                </div>
+                <div v-if="scope.row.status === 'PREPARING'" class="action-group">
                   <el-button 
-                    v-if="scope.row.status === 'PREPARING'" 
-                    type="primary" 
+                    type="success" 
                     size="small"
                     @click="completeOrder(scope.row)"
                   >
-                    <el-icon><Check /></el-icon>
-                    Checkout
+                    <el-icon><CircleCheck /></el-icon>
+                    Complete
                   </el-button>
-                </el-tooltip>
-                <el-tooltip content="Reorder the same items" placement="top">
                   <el-button 
-                    v-if="scope.row.status === 'COMPLETED' || scope.row.status === 'CANCELLED'" 
-                    type="success" 
+                    type="warning" 
                     size="small"
-                    @click="reorder(scope.row)"
+                    @click="cancelOrder(scope.row)"
                   >
-                    <el-icon><Refresh /></el-icon>
-                    Reorder
+                    <el-icon><Close /></el-icon>
+                    Cancel
                   </el-button>
-                </el-tooltip>
-              </div>
-              
-              <!-- Admin actions -->
-              <div v-if="data.user.role === 'ADMIN'" class="admin-actions">
-                <div v-if="scope.row.status === 'PENDING'" class="action-group">
-                  <el-tooltip content="Confirm order for preparation" placement="top">
-                    <el-button 
-                      type="primary" 
-                      size="small"
-                      @click="confirmOrder(scope.row)"
-                    >
-                      <el-icon><Check /></el-icon>
-                      Confirm
-                    </el-button>
-                  </el-tooltip>
-                  <el-tooltip content="Cancel this order" placement="top">
-                    <el-button 
-                      type="warning" 
-                      size="small"
-                      @click="cancelOrder(scope.row)"
-                    >
-                      <el-icon><Close /></el-icon>
-                      Cancel
-                    </el-button>
-                  </el-tooltip>
                 </div>
-                <div v-if="scope.row.status === 'PREPARING'" class="action-group">
-                  <el-tooltip content="Mark order as completed" placement="top">
-                    <el-button 
-                      type="success" 
-                      size="small"
-                      @click="completeOrder(scope.row)"
-                    >
-                      <el-icon><CircleCheck /></el-icon>
-                      Complete
-                    </el-button>
-                  </el-tooltip>
-                  <el-tooltip content="Cancel this order" placement="top">
-                    <el-button 
-                      type="warning" 
-                      size="small"
-                      @click="cancelOrder(scope.row)"
-                    >
-                      <el-icon><Close /></el-icon>
-                      Cancel
-                    </el-button>
-                  </el-tooltip>
-                </div>
-                <el-tooltip content="Delete this order permanently" placement="top">
-                  <el-button 
-                    type="danger" 
-                    size="small"
-                    @click="del(scope.row.id)"
-                    class="delete-btn"
-                  >
-                    <el-icon><Delete /></el-icon>
-                    Delete
-                  </el-button>
-                </el-tooltip>
+                <el-button 
+                  type="danger" 
+                  size="small"
+                  @click="del(scope.row.id)"
+                  class="delete-btn"
+                >
+                  <el-icon><Delete /></el-icon>
+                  Delete
+                </el-button>
               </div>
             </div>
           </template>
@@ -131,7 +115,7 @@
     </div>
 
     <div class="card" v-if="data.total">
-      <el-pagination background layout="prev, pager, next" @current-change="load" :page-size="data.pageSize" :current-page="data.pageNum" :total="data.total"/>
+      <el-pagination background layout="prev, pager, next" @current-change="load" :page-size="data.pageSize" v-model:current-page="data.pageNum" :total="data.total"/>
     </div>
 
     <!-- Reorder Confirmation Dialog -->
