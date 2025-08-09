@@ -3,11 +3,11 @@ package com.example.entity;
 import java.math.BigDecimal;
 
 public enum Decorator {
-    SPICY("spicy", "Spicy", new BigDecimal("1.0")) {
+    SPICY("spicy", "Spicy", new BigDecimal("3.0")) {
         @Override
         public FoodItem apply(FoodItem base) { return new SpicyDecorator(base); }
     },
-    GARLIC("garlic", "Garlic", new BigDecimal("0.5")) {
+    GARLIC("garlic", "Garlic", new BigDecimal("0.3")) {
         @Override
         public FoodItem apply(FoodItem base) { return new GarlicDecorator(base); }
     };

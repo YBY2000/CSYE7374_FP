@@ -3,7 +3,6 @@ package com.example.entity;
 import java.math.BigDecimal;
 
 public class SpicyDecorator extends FoodDecorator {
-    private static final BigDecimal SPICY_SURCHARGE = new BigDecimal("2.0");
 
     public SpicyDecorator(FoodItem foodItem) {
         super(foodItem);
@@ -16,6 +15,6 @@ public class SpicyDecorator extends FoodDecorator {
 
     @Override
     public BigDecimal getPrice() {
-        return getFoodItem().getPrice().add(SPICY_SURCHARGE);
+        return getFoodItem().getPrice().add(Decorator.SPICY.getSurcharge());
     }
 } 

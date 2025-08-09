@@ -71,8 +71,11 @@
     <el-dialog v-model="data.decoratorDialog.visible" title="Select options" width="400">
       <div style="margin-bottom: 12px; font-weight: bold">{{ data.decoratorDialog.item?.name }}</div>
       <el-checkbox-group v-model="data.decoratorDialog.selected">
-        <el-checkbox label="spicy">Spicy (+$1.0)</el-checkbox>
-        <el-checkbox label="garlic">Garlic (+$0.5)</el-checkbox>
+        <el-checkbox
+          v-for="d in data.availableDecorators"
+          :key="d.code"
+          :label="d.code"
+        >{{ d.label }} (+${{ d.surcharge }})</el-checkbox>
       </el-checkbox-group>
       <template #footer>
         <div class="dialog-footer">
@@ -98,12 +101,13 @@ const data = reactive({
   dialogShow: false,
   orderList: [],
   total: 0,
-    orderTotal: 0,
-    decoratorDialog: {
-      visible: false,
-      item: null,
-      selected: []
-    }
+  orderTotal: 0,
+  availableDecorators: [],
+  decoratorDialog: {
+    visible: false,
+    item: null,
+    selected: []
+  }
 })
 
 const loadTable = () => {
@@ -138,6 +142,10 @@ onMounted(() => {
   if (user.id) {
     websocketService.connect(user.id.toString());
   }
+  // load available decorators from backend enum
+  request.get('/decorators/list').then(res => {
+    data.availableDecorators = res.data || []
+  })
 });
 
 onUnmounted(() => {
@@ -156,9 +164,11 @@ const formatDecorators = (decorators) => {
 
 const decoratedUnitPrice = (item) => {
   let unit = Number(item.price)
-  if (Array.isArray(item.decorators)) {
-    if (item.decorators.includes('spicy')) unit += 1.0
-    if (item.decorators.includes('garlic')) unit += 0.5
+  if (Array.isArray(item.decorators) && Array.isArray(data.availableDecorators)) {
+    const map = Object.fromEntries(data.availableDecorators.map(d => [d.code, Number(d.surcharge)]))
+    for (const code of item.decorators) {
+      unit += Number(map[code] || 0)
+    }
   }
   return Number(unit.toFixed(2))
 }
