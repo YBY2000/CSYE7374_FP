@@ -95,12 +95,6 @@ public class OrdersController {
         return Result.success(clonedOrder);
     }
 
-    @PostMapping("/{id}/handle/{type}")
-    public Result handleOrder(@PathVariable Integer id, @PathVariable String type) {
-        ordersService.handleOrderWithType(id, type);
-        return Result.success();
-    }
-
     @PostMapping("/{id}/observer")
     public Result addObserver(@PathVariable Integer id, @RequestParam String observerType) {
         OrderObserver observer = null;

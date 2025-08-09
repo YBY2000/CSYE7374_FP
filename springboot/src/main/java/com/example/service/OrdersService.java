@@ -350,12 +350,6 @@ public class OrdersService {
         }
     }
 
-    public void handleOrderWithType(Integer orderId, String orderType) {
-        OrderHandler handler = OrderHandlerFactory.getHandler(orderType);
-        handler.handleOrder();
-        processOrderWithState(orderId, "preparing");
-    }
-
     public Orders cloneOrder(Integer orderId) {
         Orders originalOrder = selectById(orderId);
         if (originalOrder != null) {
