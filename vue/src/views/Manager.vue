@@ -94,7 +94,6 @@ onMounted(() => {
   const user = JSON.parse(localStorage.getItem('canteen-user') || '{}');
   console.log('Manager.vue mounted, user:', user);
   
-  // 确保 ElMessage 可以全局访问
   window.ElMessage = ElMessage;
   
   if (user.id) {

@@ -238,7 +238,6 @@ class WebSocketService {
     showUserMessage(message, type = 'info') {
         console.log(`[${type.toUpperCase()}] ${message}`);
         
-        // 尝试使用全局 ElMessage
         if (window.ElMessage) {
             try {
                 window.ElMessage[type](message);
@@ -248,7 +247,6 @@ class WebSocketService {
             }
         }
         
-        // 尝试使用导入的 ElMessage
         try {
             ElMessage[type](message);
             return;
@@ -256,7 +254,6 @@ class WebSocketService {
             console.warn('Failed to use imported ElMessage:', e);
         }
         
-        // 降级到原生 alert
         alert(`${type.toUpperCase()}: ${message}`);
     }
 }
