@@ -195,10 +195,23 @@ public class TablesService {
     
     public void addOrder(Tables table) {
         try {
-            String sql = "UPDATE tables SET user_id = ?, free = 'No' WHERE id = ?";
+            // First check if user already has a table assigned
+            Tables existingTable = selectByUserId(table.getUserId());
+            if (existingTable != null) {
+                throw new RuntimeException("User already has a table assigned: " + existingTable.getNo());
+            }
+            
+            // Check if the target table is actually available
+            Tables targetTable = selectById(table.getId());
+            if (targetTable == null || !"Yes".equals(targetTable.getFree())) {
+                throw new RuntimeException("Table is not available");
+            }
+            
+            // Use conditional update to prevent race conditions
+            String sql = "UPDATE tables SET user_id = ?, free = 'No' WHERE id = ? AND free = 'Yes' AND user_id IS NULL";
             int result = DatabaseUtil.executeUpdate(sql, table.getUserId(), table.getId());
             if (result <= 0) {
-                throw new RuntimeException("Table not found");
+                throw new RuntimeException("Table assignment failed - table may have been taken by another user");
             }
             
             table.setFree("No");

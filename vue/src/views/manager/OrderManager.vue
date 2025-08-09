@@ -26,7 +26,7 @@
             <el-tag v-else type="info">{{ scope.row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Action" width="250" >
+        <el-table-column label="Actions" width="250" >
           <template #default="scope">
             <el-button v-if="data.user.role === 'USER' && scope.row.status === 'PENDING'" type="primary" @click="done(scope.row)">Checkout</el-button>
             <el-button v-if="data.user.role === 'USER' && scope.row.status === 'COMPLETED'" type="success" @click="reorder(scope.row)" style="margin-left: 5px">Reorder</el-button>

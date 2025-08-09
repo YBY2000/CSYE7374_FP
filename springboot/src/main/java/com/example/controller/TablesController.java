@@ -40,14 +40,22 @@ public class TablesController {
 
     @PutMapping("/addOrder")
     public Result addOrder(@RequestBody Tables tables) {
-        tablesService.addOrder(tables);
-        return Result.success();
+        try {
+            tablesService.addOrder(tables);
+            return Result.success("Table assigned successfully");
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @PutMapping("/removeOrder")
     public Result removeOrder(@RequestBody Tables tables) {
-        tablesService.removeOrder(tables);
-        return Result.success();
+        try {
+            tablesService.removeOrder(tables);
+            return Result.success("Table released successfully");
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @GetMapping("/selectById/{id}")
