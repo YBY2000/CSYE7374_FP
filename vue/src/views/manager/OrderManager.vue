@@ -19,15 +19,17 @@
         <el-table-column prop="userName" label="Username"/>
         <el-table-column prop="status" label="Order Status">
           <template #default="scope">
-            <el-tag v-if="scope.row.status === 'PREPARING'" type="primary">{{ scope.row.status }}</el-tag>
-            <el-tag v-if="scope.row.status === 'PENDING'" type="warning">{{ scope.row.status }}</el-tag>
-            <el-tag v-if="scope.row.status === 'COMPLETED'" type="success">{{ scope.row.status }}</el-tag>
-            <span v-else>{{ scope.row.status }}</span>
+            <el-tag v-if="scope.row.status === 'PREPARING'" type="primary">PREPARING</el-tag>
+            <el-tag v-else-if="scope.row.status === 'PENDING'" type="warning">PENDING</el-tag>
+            <el-tag v-else-if="scope.row.status === 'COMPLETED'" type="success">COMPLETED</el-tag>
+            <el-tag v-else-if="scope.row.status === 'CANCELLED'" type="danger">CANCELLED</el-tag>
+            <el-tag v-else type="info">{{ scope.row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" >
+        <el-table-column label="Action" width="250" >
           <template #default="scope">
             <el-button v-if="data.user.role === 'USER' && scope.row.status === 'PENDING'" type="primary" @click="done(scope.row)">Checkout</el-button>
+            <el-button v-if="data.user.role === 'USER' && scope.row.status === 'COMPLETED'" type="success" @click="reorder(scope.row)" style="margin-left: 5px">Reorder</el-button>
             <el-button v-if="data.user.role === 'ADMIN' && scope.row.status === 'PREPARING'" type="primary" @click="handleEdit(scope.row)">Edit</el-button>
             <el-button v-if="data.user.role === 'ADMIN'" type="danger" @click="del(scope.row.id)">Delete</el-button>
           </template>
@@ -57,6 +59,24 @@
       </template>
     </el-dialog>
 
+    <!-- Reorder Confirmation Dialog -->
+    <el-dialog v-model="data.reorderVisible" title="Confirm Reorder" width="40%" destroy-on-close>
+      <div style="padding: 20px 0;">
+        <p style="margin-bottom: 15px; font-size: 16px;">Are you sure you want to reorder the following items?</p>
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+          <p><strong>Order Content:</strong> {{ data.reorderData.content }}</p>
+          <p><strong>Total Price:</strong> <span style="color: red; font-weight: bold;">￥{{ data.reorderData.total }}</span></p>
+        </div>
+        <p style="color: #666; font-size: 14px;">Note: The new order will be created with your current table information</p>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="data.reorderVisible = false">Cancel</el-button>
+          <el-button type="primary" @click="confirmReorder">Confirm Order</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -75,6 +95,8 @@ const data = reactive({
   formVisible: false,
   form: {},
   userName: '',
+  reorderVisible: false,
+  reorderData: {}
 })
 
 const done = (row) => {
@@ -146,6 +168,49 @@ const save = () => {
 const handleEdit = (row) => {
   data.form = JSON.parse(JSON.stringify(row))
   data.formVisible = true
+}
+
+// Reorder functionality
+const reorder = (row) => {
+  data.reorderData = JSON.parse(JSON.stringify(row))
+  data.reorderVisible = true
+}
+
+// Confirm reorder
+const confirmReorder = () => {
+  // Check if user has selected a table
+  request.get('/tables/selectByUserId/' + data.user.id).then(res => {
+    const currentTable = res.data
+    if (!currentTable || !currentTable.no) {
+      ElMessage.warning('Please select a table before placing an order')
+      data.reorderVisible = false
+      return
+    }
+    
+    // Create new order
+    const newOrder = {
+      content: data.reorderData.content,
+      total: data.reorderData.total,
+      userId: data.user.id,
+      status: 'PENDING'
+    }
+    
+    request.post('/orders/add', newOrder).then(res => {
+      if (res.code === '200') {
+        ElMessage.success('Reorder successful! New order has been created')
+        data.reorderVisible = false
+        load() // Refresh order list
+      } else {
+        ElMessage.error(res.msg || 'Order failed')
+      }
+    }).catch(error => {
+      ElMessage.error('Order failed, please try again')
+      console.error('Reorder failed:', error)
+    })
+  }).catch(error => {
+    ElMessage.error('Failed to get table information')
+    console.error('Get table failed:', error)
+  })
 }
 
 const del = (id) => {

@@ -2,7 +2,7 @@ package com.example.service;
 
 import com.example.database.DatabaseUtil;
 import com.example.entity.Foods;
-
+import com.example.entity.FoodsBuilder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -103,12 +103,13 @@ public class FoodsService {
             rs = ps.executeQuery();
             
             if (rs.next()) {
-                Foods food = new Foods();
-                food.setId(rs.getInt("id"));
-                food.setName(rs.getString("name"));
-                food.setDescr(rs.getString("descr"));
-                food.setPrice(rs.getBigDecimal("price"));
-                food.setImg(rs.getString("img"));
+                Foods food = new FoodsBuilder()
+                .id(rs.getInt("id"))
+                .name(rs.getString("name"))
+                .descr(rs.getString("descr"))
+                .price(rs.getBigDecimal("price"))
+                .img(rs.getString("img"))
+                .build();
                 return food;
             }
             
@@ -146,12 +147,13 @@ public class FoodsService {
             rs = ps.executeQuery();
             
             while (rs.next()) {
-                Foods food = new Foods();
-                food.setId(rs.getInt("id"));
-                food.setName(rs.getString("name"));
-                food.setDescr(rs.getString("descr"));
-                food.setPrice(rs.getBigDecimal("price"));
-                food.setImg(rs.getString("img"));
+                Foods food = new FoodsBuilder()
+                .id(rs.getInt("id"))
+                .name(rs.getString("name"))
+                .descr(rs.getString("descr"))
+                .price(rs.getBigDecimal("price"))
+                .img(rs.getString("img"))
+                .build();
                 foods.add(food);
             }
             

@@ -15,7 +15,7 @@ public class DatabaseConnectionPool {
     private static final String DRIVER_CLASS_NAME = "com.mysql.cj.jdbc.Driver";
     private static final String URL = "jdbc:mysql://localhost:3306/canteen?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=GMT%2b8&allowPublicKeyRetrieval=true";
     private static final String USERNAME = "root";
-    private static final String PASSWORD = "password"; //use your own password
+    private static final String PASSWORD = "lyx19991126"; //use your own password
     
     private DatabaseConnectionPool() {
         initializeDataSource();

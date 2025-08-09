@@ -2,10 +2,12 @@ package com.example.controller;
 
 import com.example.common.Result;
 import com.example.entity.Foods;
+import com.example.entity.FoodsBuilder;
 import com.example.service.FoodsService;
-import com.github.pagehelper.PageInfo;
+import com.github.pagehelper.PageInfo;  
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -18,8 +20,15 @@ public class FoodsController {
      * add
      */
     @PostMapping("/add")
-    public Result add(@RequestBody Foods foods) {
-        foodsService.add(foods);
+    public Result add(@RequestBody Foods requestFood) {
+        Foods food = new FoodsBuilder()
+            .name(requestFood.getName())
+            .descr(requestFood.getDescr() != null ? requestFood.getDescr() : "No description")
+            .price(requestFood.getPrice() != null ? requestFood.getPrice() : new BigDecimal("0.00"))
+            .img(requestFood.getImg() != null ? requestFood.getImg() : "/images/default.jpg")
+            .build();
+            
+        foodsService.add(food);
         return Result.success();
     }
 
@@ -45,8 +54,15 @@ public class FoodsController {
      * update
      */
     @PutMapping("/update")
-    public Result update(@RequestBody Foods foods) {
-        foodsService.updateById(foods);
+    public Result update(@RequestBody Foods requestFood) {
+        Foods food = new FoodsBuilder()
+            .id(requestFood.getId())
+            .name(requestFood.getName())
+            .descr(requestFood.getDescr() != null ? requestFood.getDescr() : "No description")
+            .price(requestFood.getPrice() != null ? requestFood.getPrice() : new BigDecimal("0.00"))
+            .img(requestFood.getImg() != null ? requestFood.getImg() : "/images/default.jpg")
+            .build();
+        foodsService.updateById(food);
         return Result.success();
     }
 
