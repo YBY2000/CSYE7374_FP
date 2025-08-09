@@ -1,23 +1,14 @@
 package com.example.entity;
 
-public interface OrderState {
-    /**
-     * Handle the current state
-     */
-    void handleState();
+public abstract class OrderState {
     
-    /**
-     * Get the state name
-     */
-    String getStateName();
+    public abstract void confirmOrder(Orders order);
+    public abstract void prepareOrder(Orders order);
+    public abstract void completeOrder(Orders order);
+    public abstract void cancelOrder(Orders order);
+    public abstract String getStatusValue();
     
-    /**
-     * Check if transition to target state is allowed
-     */
-    boolean canTransitionTo(String targetState);
-    
-    /**
-     * Get allowed transitions from current state
-     */
-    String[] getAllowedTransitions();
+    protected void changeState(Orders order, OrderState newState) {
+        order.setState(newState);
+    }
 } 

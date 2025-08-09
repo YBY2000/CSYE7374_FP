@@ -11,7 +11,6 @@ public class Orders implements Cloneable, OrderSubject {
     private BigDecimal total;
     private Integer userId;
     private String time;
-    private String status;
     private String orderNo;
     private String userName;
     
@@ -24,7 +23,6 @@ public class Orders implements Cloneable, OrderSubject {
     public Orders() {
         this.observers = new ArrayList<>();
         this.state = new PendingState();
-        this.status = "PENDING";
     }
 
     public Integer getId() {
@@ -67,15 +65,28 @@ public class Orders implements Cloneable, OrderSubject {
         this.time = time;
     }
 
-    public String getStatus() {
-        return status;
+    public void confirmOrder() {
+        state.confirmOrder(this);
     }
-
-    public void setStatus(String status) {
-        this.status = status;
-        if (observers != null) {
-            updateStateFromStatus(status);
-        }
+    
+    public void prepareOrder() {
+        state.prepareOrder(this);
+    }
+    
+    public void completeOrder() {
+        state.completeOrder(this);
+    }
+    
+    public void cancelOrder() {
+        state.cancelOrder(this);
+    }
+    
+    public String getStatus() {
+        return state.getStatusValue();
+    }
+    
+    public void setState(OrderState state) {
+        this.state = state;
     }
 
     public String getOrderNo() {
@@ -102,17 +113,7 @@ public class Orders implements Cloneable, OrderSubject {
         this.foodList = foodList;
     }
 
-    public void setState(OrderState state) {
-        this.state = state;
-    }
 
-    public OrderState getState() {
-        return state;
-    }
-
-    public void processOrder() {
-        state.handleState();
-    }
 
     @Override
     public void addObserver(OrderObserver observer) {
@@ -131,68 +132,9 @@ public class Orders implements Cloneable, OrderSubject {
         }
     }
 
-    /**
-     * Change order state with validation
-     */
-    public boolean changeState(String newState) {
-        if (state != null && !state.canTransitionTo(newState.toUpperCase())) {
-            throw new IllegalArgumentException("Invalid state transition from " + 
-                state.getStateName() + " to " + newState.toUpperCase());
-        }
-        
-        switch (newState.toUpperCase()) {
-            case "PENDING":
-                setState(new PendingState());
-                break;
-            case "PREPARING":
-                setState(new PreparingState());
-                break;
-            case "COMPLETED":
-                setState(new CompletedState());
-                break;
-            case "CANCELLED":
-                setState(new CancelledState());
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown state: " + newState);
-        }
-        this.status = newState.toUpperCase();
-        notifyObservers("State changed to: " + newState);
-        return true;
-    }
 
-    public void updateStateFromStatus(String status) {
-        if (status != null) {
-            switch (status.toUpperCase()) {
-                case "PENDING":
-                    setState(new PendingState());
-                    break;
-                case "PREPARING":
-                    setState(new PreparingState());
-                    break;
-                case "COMPLETED":
-                    setState(new CompletedState());
-                    break;
-                case "CANCELLED":
-                    setState(new CancelledState());
-                    break;
-            }
-        }
-    }
 
-    /**
-     * Get allowed transitions for current state
-     */
-    public String[] getAllowedTransitions() {
-        return state != null ? state.getAllowedTransitions() : new String[]{};
-    }
 
-    /**
-     * Check if transition to target state is allowed
-     */
-    public boolean canTransitionTo(String targetState) {
-        return state != null && state.canTransitionTo(targetState.toUpperCase());
-    }
 
     @Override
     public Orders clone() {

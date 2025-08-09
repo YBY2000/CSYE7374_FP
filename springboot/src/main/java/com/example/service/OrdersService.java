@@ -25,6 +25,25 @@ public class OrdersService {
     @Autowired
     private DiscountService discountService;
     
+    private void setOrderStateFromDatabase(Orders order, String statusFromDB) {
+        switch (statusFromDB.toUpperCase()) {
+            case "PENDING":
+                order.setState(new PendingState());
+                break;
+            case "PREPARING":
+                order.setState(new PreparingState());
+                break;
+            case "COMPLETED":
+                order.setState(new CompletedState());
+                break;
+            case "CANCELLED":
+                order.setState(new CancelledState());
+                break;
+            default:
+                order.setState(new PendingState());
+        }
+    }
+    
     @Autowired
     private WebSocketService webSocketService;
     
@@ -46,10 +65,7 @@ public class OrdersService {
                 order.setOrderNo(generateOrderId());
             }
             
-            // Set default status to PENDING if not specified
-            if (order.getStatus() == null || order.getStatus().isEmpty()) {
-                order.setStatus("PENDING");
-            }
+
             
             // Apply pricing strategy to calculate final price
             if (order.getTotal() != null) {
@@ -69,10 +85,6 @@ public class OrdersService {
             int result = ps.executeUpdate();
             if (result <= 0) {
                 throw new RuntimeException("Failed to add order");
-            }
-            
-            if (order.getStatus() != null) {
-                order.updateStateFromStatus(order.getStatus());
             }
             
             order.addObserver(userNotifier);
@@ -131,9 +143,7 @@ public class OrdersService {
                 throw new RuntimeException("Order not found");
             }
             
-            if (order.getStatus() != null) {
-                order.updateStateFromStatus(order.getStatus());
-            }
+
             
             order.notifyObservers("Order updated: " + order.getStatus());
             
@@ -167,12 +177,12 @@ public class OrdersService {
                 order.setTotal(rs.getBigDecimal("total"));
                 order.setUserId(rs.getInt("user_id"));
                 order.setTime(rs.getString("time"));
-                order.setStatus(rs.getString("status"));
                 order.setOrderNo(rs.getString("order_no"));
                 order.setUserName(rs.getString("userName"));
                 
-                if (order.getStatus() != null) {
-                    order.updateStateFromStatus(order.getStatus());
+                String statusFromDB = rs.getString("status");
+                if (statusFromDB != null) {
+                    setOrderStateFromDatabase(order, statusFromDB);
                 }
                 
                 return order;
@@ -227,12 +237,12 @@ public class OrdersService {
                 order.setTotal(rs.getBigDecimal("total"));
                 order.setUserId(rs.getInt("user_id"));
                 order.setTime(rs.getString("time"));
-                order.setStatus(rs.getString("status"));
                 order.setOrderNo(rs.getString("order_no"));
                 order.setUserName(rs.getString("userName"));
                 
-                if (order.getStatus() != null) {
-                    order.updateStateFromStatus(order.getStatus());
+                String statusFromDB = rs.getString("status");
+                if (statusFromDB != null) {
+                    setOrderStateFromDatabase(order, statusFromDB);
                 }
                 
                 orders.add(order);
@@ -304,12 +314,12 @@ public class OrdersService {
                 order.setTotal(rs.getBigDecimal("total"));
                 order.setUserId(rs.getInt("user_id"));
                 order.setTime(rs.getString("time"));
-                order.setStatus(rs.getString("status"));
                 order.setOrderNo(rs.getString("order_no"));
                 order.setUserName(rs.getString("userName"));
                 
-                if (order.getStatus() != null) {
-                    order.updateStateFromStatus(order.getStatus());
+                String statusFromDB = rs.getString("status");
+                if (statusFromDB != null) {
+                    setOrderStateFromDatabase(order, statusFromDB);
                 }
                 
                 orders.add(order);
@@ -337,7 +347,6 @@ public class OrdersService {
             
             Orders order = selectById(id);
             if (order != null) {
-                order.updateStateFromStatus(status);
                 order.notifyObservers("Order status updated to: " + status);
             }
             
@@ -347,13 +356,28 @@ public class OrdersService {
         }
     }
 
-    public void processOrderWithState(Integer orderId, String newState) {
+    public void processOrderWithState(Integer orderId, String action) {
         Orders order = selectById(orderId);
         if (order != null) {
             try {
-                order.changeState(newState);
+                switch (action.toUpperCase()) {
+                    case "CONFIRM":
+                        order.confirmOrder();
+                        break;
+                    case "PREPARE":
+                        order.prepareOrder();
+                        break;
+                    case "COMPLETE":
+                        order.completeOrder();
+                        break;
+                    case "CANCEL":
+                        order.cancelOrder();
+                        break;
+                    default:
+                        throw new RuntimeException("Invalid action: " + action);
+                }
                 updateById(order);
-            } catch (IllegalArgumentException e) {
+            } catch (RuntimeException e) {
                 throw new RuntimeException("Invalid state transition: " + e.getMessage(), e);
             }
         } else {
@@ -369,12 +393,12 @@ public class OrdersService {
         if (order != null) {
             try {
                 String oldStatus = order.getStatus();
-                order.changeState("CANCELLED");
+                order.cancelOrder();
                 updateById(order);
                 
                 sendOrderStatusNotification(order, oldStatus, "CANCELLED", "Order has been cancelled");
                 
-            } catch (IllegalArgumentException e) {
+            } catch (RuntimeException e) {
                 throw new RuntimeException("Cannot cancel order: " + e.getMessage(), e);
             }
         } else {
@@ -390,12 +414,12 @@ public class OrdersService {
         if (order != null) {
             try {
                 String oldStatus = order.getStatus();
-                order.changeState("PREPARING");
+                order.confirmOrder();
                 updateById(order);
                 
                 sendOrderStatusNotification(order, oldStatus, "PREPARING", "Order has been confirmed and is now being prepared");
                 
-            } catch (IllegalArgumentException e) {
+            } catch (RuntimeException e) {
                 throw new RuntimeException("Cannot confirm order: " + e.getMessage(), e);
             }
         } else {
@@ -411,12 +435,12 @@ public class OrdersService {
         if (order != null) {
             try {
                 String oldStatus = order.getStatus();
-                order.changeState("COMPLETED");
+                order.completeOrder();
                 updateById(order);
                 
                 sendOrderStatusNotification(order, oldStatus, "COMPLETED", "Order has been completed and is ready for pickup");
                 
-            } catch (IllegalArgumentException e) {
+            } catch (RuntimeException e) {
                 throw new RuntimeException("Cannot complete order: " + e.getMessage(), e);
             }
         } else {

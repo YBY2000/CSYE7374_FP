@@ -60,9 +60,30 @@ public class OrdersBuilder {
         order.setTotal(total);
         order.setUserId(userId);
         order.setTime(time);
-        order.setStatus(status);
         order.setOrderNo(orderNo);
         order.setUserName(userName);
+        
+        // Set state based on status if provided
+        if (status != null) {
+            switch (status.toUpperCase()) {
+                case "PENDING":
+                    order.setState(new PendingState());
+                    break;
+                case "PREPARING":
+                    order.setState(new PreparingState());
+                    break;
+                case "COMPLETED":
+                    order.setState(new CompletedState());
+                    break;
+                case "CANCELLED":
+                    order.setState(new CancelledState());
+                    break;
+                default:
+                    order.setState(new PendingState());
+                    break;
+            }
+        }
+        
         return order;
     }
 } 

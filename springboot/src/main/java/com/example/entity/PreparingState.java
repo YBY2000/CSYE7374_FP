@@ -1,23 +1,31 @@
 package com.example.entity;
 
-public class PreparingState implements OrderState {
+public class PreparingState extends OrderState {
+    
     @Override
-    public void handleState() {
-        System.out.println("Order is being prepared in kitchen");
+    public void confirmOrder(Orders order) {
+        throw new RuntimeException("Order is already confirmed and being prepared");
     }
     
     @Override
-    public String getStateName() {
+    public void prepareOrder(Orders order) {
+        System.out.println("Order " + order.getOrderNo() + " is being prepared in kitchen");
+    }
+    
+    @Override
+    public void completeOrder(Orders order) {
+        changeState(order, new CompletedState());
+        System.out.println("Order " + order.getOrderNo() + " is ready for pickup");
+    }
+    
+    @Override
+    public void cancelOrder(Orders order) {
+        changeState(order, new CancelledState());
+        System.out.println("Order " + order.getOrderNo() + " cancelled during preparation");
+    }
+    
+    @Override
+    public String getStatusValue() {
         return "PREPARING";
-    }
-    
-    @Override
-    public boolean canTransitionTo(String targetState) {
-        return targetState.equals("COMPLETED") || targetState.equals("CANCELLED");
-    }
-    
-    @Override
-    public String[] getAllowedTransitions() {
-        return new String[]{"COMPLETED", "CANCELLED"};
     }
 } 

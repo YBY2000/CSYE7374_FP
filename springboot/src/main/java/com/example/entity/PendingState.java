@@ -1,23 +1,31 @@
 package com.example.entity;
 
-public class PendingState implements OrderState {
+public class PendingState extends OrderState {
+    
     @Override
-    public void handleState() {
-        System.out.println("Order is in pending state - waiting for admin confirmation");
+    public void confirmOrder(Orders order) {
+        changeState(order, new PreparingState());
+        System.out.println("Order " + order.getOrderNo() + " confirmed and sent to kitchen");
     }
     
     @Override
-    public String getStateName() {
+    public void prepareOrder(Orders order) {
+        throw new RuntimeException("Cannot prepare an unconfirmed order");
+    }
+    
+    @Override
+    public void completeOrder(Orders order) {
+        throw new RuntimeException("Cannot complete an unconfirmed order");
+    }
+    
+    @Override
+    public void cancelOrder(Orders order) {
+        changeState(order, new CancelledState());
+        System.out.println("Order " + order.getOrderNo() + " has been cancelled");
+    }
+    
+    @Override
+    public String getStatusValue() {
         return "PENDING";
-    }
-    
-    @Override
-    public boolean canTransitionTo(String targetState) {
-        return targetState.equals("PREPARING") || targetState.equals("CANCELLED");
-    }
-    
-    @Override
-    public String[] getAllowedTransitions() {
-        return new String[]{"PREPARING", "CANCELLED"};
     }
 } 

@@ -74,7 +74,6 @@ public class OrdersController {
         // DB column is DECIMAL(10,0); round to integer to avoid truncation
         order.setTotal(total.setScale(0, java.math.RoundingMode.HALF_UP));
         order.setUserId(req.getUserId());
-        order.setStatus(req.getStatus() != null ? req.getStatus() : "PENDING");
 
         ordersService.add(order);
         return Result.success();

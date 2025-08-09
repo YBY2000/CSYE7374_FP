@@ -1,23 +1,29 @@
 package com.example.entity;
 
-public class CompletedState implements OrderState {
+public class CompletedState extends OrderState {
+    
     @Override
-    public void handleState() {
-        System.out.println("Order is completed and ready for pickup/delivery");
+    public void confirmOrder(Orders order) {
+        throw new RuntimeException("Order is already completed");
     }
     
     @Override
-    public String getStateName() {
+    public void prepareOrder(Orders order) {
+        throw new RuntimeException("Order is already completed");
+    }
+    
+    @Override
+    public void completeOrder(Orders order) {
+        throw new RuntimeException("Order is already completed");
+    }
+    
+    @Override
+    public void cancelOrder(Orders order) {
+        throw new RuntimeException("Cannot cancel a completed order");
+    }
+    
+    @Override
+    public String getStatusValue() {
         return "COMPLETED";
-    }
-    
-    @Override
-    public boolean canTransitionTo(String targetState) {
-        return false; // Completed state is final
-    }
-    
-    @Override
-    public String[] getAllowedTransitions() {
-        return new String[]{};
     }
 } 
