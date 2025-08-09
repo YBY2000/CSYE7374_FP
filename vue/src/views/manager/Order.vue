@@ -32,7 +32,7 @@
           </div>
           <div style="margin: 10px 0; text-align: right">
             <el-input-number :min="1" v-model="item.num" style="margin-right: 5px"></el-input-number>
-            <el-button type="primary" @click="addOrder(item)">Order</el-button>
+            <el-button type="primary" @click="openDecoratorDialog(item)">Order</el-button>
           </div>
         </div>
       </el-col>
@@ -45,8 +45,17 @@
             <el-image style="width: 50px; height: 50px" :src="scope.row.img" :preview-src-list="[scope.row.img]" preview-teleported></el-image>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="Name" />
-        <el-table-column prop="price" label="Price" />
+        <el-table-column label="Name">
+          <template #default="scope">
+            <span>{{ scope.row.name }}</span>
+            <span v-if="Array.isArray(scope.row.decorators) && scope.row.decorators.length" style="color:#666"> ({{ formatDecorators(scope.row.decorators) }})</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="Price">
+          <template #default="scope">
+            {{ decoratedUnitPrice(scope.row) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="num" label="Num of item" />
       </el-table>
       <div style="text-align: right; color: red; font-weight: bold; font-size: 20px; margin-top: 10px">Total Price：${{ data.orderTotal }}</div>
@@ -54,6 +63,21 @@
         <div class="dialog-footer">
           <el-button @click="data.dialogShow = false">Close</el-button>
           <el-button type="primary" @click="save">Place Order</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- Decorator selection dialog -->
+    <el-dialog v-model="data.decoratorDialog.visible" title="Select options" width="400">
+      <div style="margin-bottom: 12px; font-weight: bold">{{ data.decoratorDialog.item?.name }}</div>
+      <el-checkbox-group v-model="data.decoratorDialog.selected">
+        <el-checkbox label="spicy">Spicy (+$1.0)</el-checkbox>
+        <el-checkbox label="garlic">Garlic (+$0.5)</el-checkbox>
+      </el-checkbox-group>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="data.decoratorDialog.visible = false">Cancel</el-button>
+          <el-button type="primary" @click="confirmDecorator">Add</el-button>
         </div>
       </template>
     </el-dialog>
@@ -74,7 +98,12 @@ const data = reactive({
   dialogShow: false,
   orderList: [],
   total: 0,
-  orderTotal: 0
+    orderTotal: 0,
+    decoratorDialog: {
+      visible: false,
+      item: null,
+      selected: []
+    }
 })
 
 const loadTable = () => {
@@ -119,7 +148,56 @@ const showOrderList = () => {
   data.dialogShow = true
 }
 
-// 点餐的逻辑
+const formatDecorators = (decorators) => {
+  return decorators
+    .map(d => (d === 'spicy' ? 'spicy' : d === 'garlic' ? 'garlic' : d))
+    .join(', ')
+}
+
+const decoratedUnitPrice = (item) => {
+  let unit = Number(item.price)
+  if (Array.isArray(item.decorators)) {
+    if (item.decorators.includes('spicy')) unit += 1.0
+    if (item.decorators.includes('garlic')) unit += 0.5
+  }
+  return Number(unit.toFixed(2))
+}
+
+const openDecoratorDialog = (foods) => {
+  data.decoratorDialog.item = foods
+  data.decoratorDialog.selected = []
+  data.decoratorDialog.visible = true
+}
+
+const confirmDecorator = () => {
+  const foods = data.decoratorDialog.item
+  const selected = [...data.decoratorDialog.selected]
+  data.decoratorDialog.visible = false
+
+  // attach decorators to the item instance to persist in order list
+  const decoratedKey = (id, decorators) => id + '::' + decorators.sort().join(',')
+
+  let f = data.orderList.find(item => item._key === decoratedKey(foods.id, selected))
+  if (f) {
+    f.num += foods.num
+  } else {
+    let foods1 = JSON.parse(JSON.stringify(foods))
+    foods1.decorators = selected
+    foods1._key = decoratedKey(foods.id, selected)
+    data.orderList.push(foods1)
+  }
+
+  // recompute total count and price
+  data.total = data.orderList.map(item => item.num).reduce((acc, cur) => acc + cur, 0)
+  data.orderTotal = 0
+  data.orderList.forEach(item => {
+    data.orderTotal += decoratedUnitPrice(item) * item.num
+  })
+  data.orderTotal = Number(data.orderTotal.toFixed(2))
+  ElMessage.success('Item added to order')
+}
+
+// legacy add without decorators (fallback if needed)
 const addOrder = (foods) => {
   let f = data.orderList.find(item => item.id === foods.id)  // Find the dish that’s already in the order list
   if (f) {  //  If exists, update its quantity (num of items)
@@ -133,8 +211,7 @@ const addOrder = (foods) => {
   //  orderTotal is the total amount of the order
   data.orderTotal = 0
   data.orderList.forEach(item => {
-    // Sum: unit price * quantity
-    data.orderTotal += item.price * item.num
+    data.orderTotal += decoratedUnitPrice(item) * item.num
   })
   data.orderTotal.toFixed()
   ElMessage.success('Item added to order')
@@ -146,13 +223,17 @@ const save = () => {
     ElMessage.warning('Please select at least one item')
     return
   }
-  let content = ''
-  data.orderList.forEach(item => {
-    content += item.name + 'x' + item.num + '，'
-  })
-  content = content.substring(0 , content.length - 1)  //  Remove the last comma at the end of the item string
-  let orderData = {  content:  content, total: data.orderTotal, userId: data.user.id, status: 'PENDING'}
-  request.post('/orders/add', orderData).then(res => {
+  // build payload for server-side price verification and content rendering
+  const items = data.orderList.map(item => ({
+    foodId: item.id,
+    quantity: item.num,
+    decorators: item.decorators || []
+  }))
+  request.post('/orders/addWithItems', {
+    userId: data.user.id,
+    status: 'PENDING',
+    items
+  }).then(res => {
     if (res.code === '200') {  // Order success
       ElMessage.success('Order placed successfully. You can check the status in My Orders')
       data.dialogShow = false
