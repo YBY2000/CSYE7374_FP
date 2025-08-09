@@ -72,7 +72,6 @@ public class Orders implements Cloneable, OrderSubject {
 
     public void setStatus(String status) {
         this.status = status;
-        // 只在非JSON反序列化时更新状态
         if (observers != null) {
             updateStateFromStatus(status);
         }

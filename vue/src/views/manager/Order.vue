@@ -151,7 +151,7 @@ const loadFoods = () => {
 }
 loadFoods()
 
-// WebSocket连接
+
 onMounted(() => {
   const user = JSON.parse(localStorage.getItem('canteen-user') || '{}');
   if (user.id) {

@@ -90,8 +90,8 @@ const data = reactive({
   user: JSON.parse(localStorage.getItem('canteen-user') || '{}'),
   tableData: [],
   total: 0,
-  pageNum: 1,  // Current page number
-  pageSize: 5,  // Items per page
+  pageNum: 1,
+  pageSize: 5,
   formVisible: false,
   form: {},
   userName: '',
@@ -103,9 +103,9 @@ const done = (row) => {
   let form = JSON.parse(JSON.stringify(row))
   form.status = 'COMPLETED'
   request.put('/orders/update', form).then(res => {
-    if (res.code === '200') {  // Success
+    if (res.code === '200') {
       ElMessage.success('Operation successful')
-      load()  // Reload table data
+      load()
     } else {
       ElMessage.error(res.msg)
     }
@@ -128,7 +128,6 @@ const load = () => {
 
 load()
 
-// WebSocket连接
 onMounted(() => {
   const user = JSON.parse(localStorage.getItem('canteen-user') || '{}');
   if (user.id) {
@@ -140,7 +139,6 @@ onUnmounted(() => {
   websocketService.disconnect();
 });
 
-// 暴露刷新方法给WebSocket服务
 window.refreshOrders = load;
 
 const reset = () => {
@@ -148,17 +146,17 @@ const reset = () => {
   load()
 }
 
-// 保存数据
+
 const save = () => {
   request.request({
     method: data.form.id ? 'PUT' : 'POST',
     url: data.form.id ? '/orders/update' : '/orders/add',
     data: data.form
   }).then(res => {
-    if (res.code === '200') {  // Success
+    if (res.code === '200') {
       ElMessage.success('Operation successful')
-      data.formVisible = false // Close dialog
-      load()  // Reload table data
+      data.formVisible = false
+      load()
     } else {
       ElMessage.error(res.msg)
     }
@@ -170,15 +168,12 @@ const handleEdit = (row) => {
   data.formVisible = true
 }
 
-// Reorder functionality
 const reorder = (row) => {
   data.reorderData = JSON.parse(JSON.stringify(row))
   data.reorderVisible = true
 }
 
-// Confirm reorder
 const confirmReorder = () => {
-  // Check if user has selected a table
   request.get('/tables/selectByUserId/' + data.user.id).then(res => {
     const currentTable = res.data
     if (!currentTable || !currentTable.no) {
@@ -187,7 +182,6 @@ const confirmReorder = () => {
       return
     }
     
-    // Create new order
     const newOrder = {
       content: data.reorderData.content,
       total: data.reorderData.total,
@@ -199,7 +193,7 @@ const confirmReorder = () => {
       if (res.code === '200') {
         ElMessage.success('Reorder successful! New order has been created')
         data.reorderVisible = false
-        load() // Refresh order list
+        load() 
       } else {
         ElMessage.error(res.msg || 'Order failed')
       }
@@ -216,9 +210,9 @@ const confirmReorder = () => {
 const del = (id) => {
   ElMessageBox.confirm('This action cannot be undone. Are you sure you want to delete it?', 'Confirm Delete', { type: 'warning' }).then(res => {
     request.delete('/orders/delete/' + id).then(res => {
-      if (res.code === '200') {  // Success
+      if (res.code === '200') {
         ElMessage.success('Operation successful')
-        load()  // Reload table data
+        load()
       } else {
         ElMessage.error(res.msg)
       }

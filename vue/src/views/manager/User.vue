@@ -47,7 +47,7 @@
         </el-form-item>
         <el-form-item label="Avatar">
           <el-upload action="http://localhost:9090/files/upload" :on-success="handleFileUpload">
-            <el-button type="primary">点击上传</el-button>
+            <el-button type="primary">UPLOAD</el-button>
           </el-upload>
         </el-form-item>
         <el-form-item label="Sex">

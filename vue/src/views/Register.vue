@@ -13,7 +13,7 @@
           <el-input :prefix-icon="Lock" size="large" v-model="data.form.confirmPassword" placeholder="Please confirm password" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button size="large" type="primary" style="width: 100%" @click="register">注 册</el-button>
+          <el-button size="large" type="primary" style="width: 100%" @click="register">REGISTER</el-button>
         </el-form-item>
       </el-form>
       <div style="text-align: right;">

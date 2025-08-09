@@ -109,7 +109,7 @@ const save = () => {
     data: data.form
   }).then(res => {
     if (res.code === '200') {  // Success
-      ElMessage.success('操作成功')
+      ElMessage.success('Success')
       data.formVisible = false // Close dialog
       load()  // Reload table data
     } else {

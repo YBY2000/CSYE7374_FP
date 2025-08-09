@@ -64,7 +64,6 @@ public class WebController {
             adminAccount.setPassword(user.getPassword());
             adminAccount.setName(user.getName());
             adminAccount.setRole(user.getRole());
-            // 这里可以调用 adminService.register() 如果存在的话
             return Result.success(adminAccount);
         } else {
             return Result.error("Invalid role parameter.");
